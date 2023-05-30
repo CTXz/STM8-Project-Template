@@ -1,32 +1,30 @@
-# STM8S Project Template
+# STM8S Project Template <!-- omit in toc -->
 
 This repository contains a template to kickstart your STM8S projects.
 
-The template provides the STM8 standard peripheral library and a Makefile to build a toolchain, build the project and flash the device.
+The template provides the STM8S standard peripheral library and a Makefile to build a toolchain, build the project and flash the device.
 As a nice bonus, the toolchain provided by the template only bundles free and open source tools:
  - [sdcc](http://sdcc.sourceforge.net/) as the compiler
  - [stm8flash](https://github.com/vdudouyt/stm8flash) to flash the device
  - [sdccrm](https://github.com/XaviDCR92/sdccrm) for dead code elimination
  - [stm8-binutils-gdb](https://stm8-binutils-gdb.sourceforge.io/) for binary utilities and debugging
 
-As can be seen from the list above, dead code elimination is also taken care of by the template via sdccrm, which is particularly useful
+As can be seen from the list above, dead code elimination is also taken care of by the template via [sdccrm](https://github.com/XaviDCR92/sdccrm), which is particularly useful
 since SDCC in itself does not perform any dead code elimination, quickly filling up the STM8's limited flash memory when using the standard
 peripheral library.
 
-## Table of contents
+## Table of contents <!-- omit in toc -->
 
-- [STM8S Project Template](#stm8s-project-template)
-  - [Table of contents](#table-of-contents)
-  - [Getting started](#getting-started)
-    - [Building the toolchain](#building-the-toolchain)
-    - [Preparing the Makefile](#preparing-the-makefile)
-    - [Building and uploading the project](#building-and-uploading-the-project)
-  - [STM8S Standard Peripheral Library](#stm8s-standard-peripheral-library)
-    - [Configuring the Standard Peripheral Library: src/stm8\_conf.h](#configuring-the-standard-peripheral-library-srcstm8_confh)
-    - [Prepping the interrupts: src/stm8s\_it.c, include/stm8s\_it.h](#prepping-the-interrupts-srcstm8s_itc-includestm8s_ith)
-      - [A technical note on the interrupt handlers](#a-technical-note-on-the-interrupt-handlers)
-  - [Adding libraries](#adding-libraries)
-  - [Final words](#final-words)
+- [Getting started](#getting-started)
+  - [Building the toolchain](#building-the-toolchain)
+  - [Preparing the Makefile](#preparing-the-makefile)
+  - [Building and uploading the project](#building-and-uploading-the-project)
+- [STM8S Standard Peripheral Library](#stm8s-standard-peripheral-library)
+  - [Configuring the Standard Peripheral Library: src/stm8\_conf.h](#configuring-the-standard-peripheral-library-srcstm8_confh)
+  - [Prepping the interrupts: src/stm8s\_it.c, include/stm8s\_it.h](#prepping-the-interrupts-srcstm8s_itc-includestm8s_ith)
+    - [A technical note on the interrupt handlers](#a-technical-note-on-the-interrupt-handlers)
+- [Adding libraries](#adding-libraries)
+- [Final words](#final-words)
 
 
 ## Getting started
@@ -53,13 +51,13 @@ Before building the toolchain, make sure you have the following dependencies ins
 - automake
 - help2man
 
-On Ubuntu 20.04+ systems, you can install all of the above with the following make target:
+On Ubuntu 20.04+ systems, you can install all of the above dependencies with the following make target:
 
 ```bash
 $ make ubuntu_deps
 ```
 
-On debian systems, this command should likely work as well. For other distributions, you will have
+On debian systems, this target should likely work as well. For other distributions, you will have
 to install the dependencies manually using your distro's package manager.
 
 Once the dependencies are installed, you can build the toolchain with the following command:
@@ -89,7 +87,7 @@ BUILD_TARGET_DEVICE :=
 
 The target device should match the entries found in the [`stm8s.h` header](lib/STM8S_StdPeriph_Driver/inc/stm8s.h) from the standard peripheral library.
 This lets the standard peripheral library know which device you're building for, so it can include the correct headers for your device.
-As an example, if you're building for the STM8S103F3, set the parameter to `STM8S103`.
+As an example, if you're building for the STM8S103 series, set the parameter to `STM8S103`.
 
 Next, specify the RAM & Flash size, upload target device and upload programmer that you're using:
 
@@ -102,6 +100,16 @@ UPLOAD_PROGRAMMER     :=
 
 The RAM & Flash size parameters are used by the Makefile to check if the firmware fits in the device's memory.
 The upload target device parameter and upload programmer parameters are used required by the flash tool to flash the device.
+
+
+As an example, if we were to flash an STM8S103F3 device using an ST-Link V2 programmer, the parameters would look like this:
+
+```makefile
+RAM_SIZE             := 1024
+FLASH_SIZE           := 8096
+UPLOAD_TARGET_DEVICE := stm8s103f3
+UPLOAD_PROGRAMMER    := stlinkv2
+```
 
 These are the supported upload target devices (at the time of writing):
 ```
@@ -147,6 +155,8 @@ To flash the device, attach the programmer and use the following command:
 ```bash
 $ make upload
 ```
+
+If everything went well, the flash tool should report a successful flash and your device should be running the blank firmware (i.e. do nothing).
 
 ## STM8S Standard Peripheral Library
 
@@ -293,7 +303,7 @@ In theory we can ommit the `stm8s_it` files and declare the handler within the m
  #define INTERRUPT_HANDLER(a,b) void a() __interrupt(b)
 ```
 
-with `a` being the name of the handler, which may be user defined, and `b` being the interrupt vector number. A overview of the interrupt vectors along with their IRQ number and meaning can be found in the [STM8S103F3 datasheet](https://www.st.com/resource/en/datasheet/stm8s103f2.pdf), page 43, Chapter 7 - 7 Interrupt vector mapping, Table 10.
+with `a` being the name of the handler, which may be user defined, and `b` being the interrupt vector number. A overview of the interrupt vectors along with their IRQ number and meaning can be found in the "Interupt Vector Mapping" section of your STM8's specific datasheet.
 
 If cross-compiler compatibility is not a concern, then you can also opt to use the SDCC specific interrupt handler declaration to which the `INTERRUPT_HANDLER` macro expands to.
 
@@ -308,4 +318,4 @@ definitions that start with `EXAMPLELIB_`. With a bit of makefile knowledge, the
 
 Hopefully this template project will help you get started with your STM8 projects without having to spend uncessary time on setting up a working environment.
 
-Obviously you can feel free to alter the makefile according. I also suck at makefiles so if you have any suggestions, feel free to open an issue or a pull request.
+Obviously you can feel free to alter the makefile according to your needs. I also must admit that I suck at makefiles, so if you have any suggestions, feel free to open an issue or a pull request.
