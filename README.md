@@ -94,10 +94,10 @@ As an example, if you're building for the STM8S103F3, set the parameter to `STM8
 Next, specify the RAM & Flash size, upload target device and upload programmer that you're using:
 
 ```makefile
-RAM_SIZE			 :=
-FLASH_SIZE			 :=
-UPLOAD_TARGET_DEVICE :=
-UPLOAD_PROGRAMMER	 :=
+RAM_SIZE			        :=
+FLASH_SIZE			      :=
+UPLOAD_TARGET_DEVICE  :=
+UPLOAD_PROGRAMMER	    :=
 ```
 
 The RAM & Flash size parameters are used by the Makefile to check if the firmware fits in the device's memory.
@@ -134,6 +134,12 @@ $ make
 ```
 
 If everything went well, you should see a `build` directory in the project root, containing the compiled firmware as `.hex` and `.elf` file.
+
+> **Quick note regarding dead code elimination:**
+> This template uses [sdccrm](https://github.com/XaviDCR92/sdccrm) for dead code elimination. Unfortunately, sdccrm is not perfect and sometimes
+> removes code that is actually used (ex. interrupt handlers, functions called via function pointers, etc.). If you run into this issue, you can
+> manually exclude the missing symbols from dead code elimination by adding them to the `DCE_EXCLUDE` list in the Makefile.
+> If your linker complains about missing symbols but you're certain that they're defined, try adding them to the `DCE_EXCLUDE` list!
 
 To flash the device, attach the programmer and use the following command:
 
