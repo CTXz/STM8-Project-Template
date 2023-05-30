@@ -94,10 +94,10 @@ As an example, if you're building for the STM8S103F3, set the parameter to `STM8
 Next, specify the RAM & Flash size, upload target device and upload programmer that you're using:
 
 ```makefile
-RAM_SIZE			        :=
-FLASH_SIZE			      :=
+RAM_SIZE              :=
+FLASH_SIZE            :=
 UPLOAD_TARGET_DEVICE  :=
-UPLOAD_PROGRAMMER	    :=
+UPLOAD_PROGRAMMER     :=
 ```
 
 The RAM & Flash size parameters are used by the Makefile to check if the firmware fits in the device's memory.
@@ -135,11 +135,12 @@ $ make
 
 If everything went well, you should see a `build` directory in the project root, containing the compiled firmware as `.hex` and `.elf` file.
 
-> **Quick note regarding dead code elimination:**
-> This template uses [sdccrm](https://github.com/XaviDCR92/sdccrm) for dead code elimination. Unfortunately, sdccrm is not perfect and sometimes
-> removes code that is actually used (ex. interrupt handlers, functions called via function pointers, etc.). If you run into this issue, you can
-> manually exclude the missing symbols from dead code elimination by adding them to the `DCE_EXCLUDE` list in the Makefile.
-> If your linker complains about missing symbols but you're certain that they're defined, try adding them to the `DCE_EXCLUDE` list!
+**Quick note regarding dead code elimination:**
+This template uses [sdccrm](https://github.com/XaviDCR92/sdccrm) for dead code elimination. Unfortunately, sdccrm is not perfect and sometimes
+removes code that is actually used (ex. interrupt handlers, functions called via function pointers, etc.). This will manifest itself through
+missing symbol errors from the linker. If you run into this issue, you can manually exclude the missing symbols from dead code elimination 
+by adding them to the `DCE_EXCLUDE` list in the Makefile. If your linker complains about missing symbols but you're certain that they're defined,
+try adding them to the `DCE_EXCLUDE` list!
 
 To flash the device, attach the programmer and use the following command:
 
@@ -215,23 +216,23 @@ In the main function we then initialize the GPIOs and the external interrupts.
 
 ```c
 int main() {
-	// Initialize the GPIOs
-    	GPIO_Init(GPIOB, GPIO_PIN_5, GPIO_MODE_OUT_PP_LOW_FAST); // LED
-	GPIO_Init(GPIOD, GPIO_PIN_ALL, GPIO_MODE_IN_PU_IT); // Button with internal pull-up resistor and external interrupt enabled
+  // Initialize the GPIOs
+      GPIO_Init(GPIOB, GPIO_PIN_5, GPIO_MODE_OUT_PP_LOW_FAST); // LED
+  GPIO_Init(GPIOD, GPIO_PIN_ALL, GPIO_MODE_IN_PU_IT); // Button with internal pull-up resistor and external interrupt enabled
 ```
 
 We then set the external interrupt sensitivity to rising edge and enable the interrupts.
 
 ```c
-	// Initialize the external interrupts
-	EXTI_SetExtIntSensitivity(EXTI_PORT_GPIOD, EXTI_SENSITIVITY_RISE_ONLY);
-	enableInterrupts();
+  // Initialize the external interrupts
+  EXTI_SetExtIntSensitivity(EXTI_PORT_GPIOD, EXTI_SENSITIVITY_RISE_ONLY);
+  enableInterrupts();
 ```
 
 Finally, we let the MCU loop forever.
 
 ```c
-	while(TRUE);
+  while(TRUE);
 }
 ```
 
@@ -239,15 +240,15 @@ All in all our main function should look like this:
 
 ```c
 int main() {
-	// Initialize the GPIOs
-    	GPIO_Init(GPIOB, GPIO_PIN_5, GPIO_MODE_OUT_PP_LOW_FAST); // LED
-	GPIO_Init(GPIOD, GPIO_PIN_ALL, GPIO_MODE_IN_PU_IT); // Button with internal pull-up resistor and external interrupt enabled
+  // Initialize the GPIOs
+      GPIO_Init(GPIOB, GPIO_PIN_5, GPIO_MODE_OUT_PP_LOW_FAST); // LED
+  GPIO_Init(GPIOD, GPIO_PIN_ALL, GPIO_MODE_IN_PU_IT); // Button with internal pull-up resistor and external interrupt enabled
 
-	// Initialize the external interrupts
-	EXTI_SetExtIntSensitivity(EXTI_PORT_GPIOD, EXTI_SENSITIVITY_RISE_ONLY);
-	enableInterrupts();
+  // Initialize the external interrupts
+  EXTI_SetExtIntSensitivity(EXTI_PORT_GPIOD, EXTI_SENSITIVITY_RISE_ONLY);
+  enableInterrupts();
 
-	while(TRUE);
+  while(TRUE);
 }
 ```
 
@@ -277,7 +278,7 @@ Within the function, we simply toggle the LED pin.
   */
 INTERRUPT_HANDLER(EXTI_PORTD_IRQHandler, 6)
 {
-   	GPIO_WriteReverse(GPIOB, GPIO_PIN_5);
+     GPIO_WriteReverse(GPIOB, GPIO_PIN_5);
 }
 ```
 
