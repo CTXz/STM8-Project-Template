@@ -186,19 +186,19 @@ upload: upload_make_param_check toolchain_check $(OBJ)/$(FW_BIN).hex size_check
 	$(FLASH_TOOL) $(UPLOAD_FLAGS) $(OBJ)/$(FW_BIN).hex
 
 upload_make_param_check:
-	# Check if all required parameters are set
-	ifeq ($(RAM_SIZE),)
-		$(error RAM_SIZE is not defined. Please specify the RAM size of the target device in the Makefile)
-	endif
-	ifeq ($(FLASH_SIZE),)
-		$(error FLASH_SIZE is not defined. Please specify the flash size of the target device in the Makefile)
-	endif
-	ifeq ($(UPLOAD_TARGET_DEVICE),)
-		$(error UPLOAD_TARGET_DEVICE is not defined. Please specify the target device in the Makefile)
-	endif
-	ifeq ($(UPLOAD_PROGRAMMER),)
-		$(error UPLOAD_PROGRAMMER is not defined. Please specify the programmer in the Makefile)
-	endif
+# Check if all required parameters are set
+ifeq ($(RAM_SIZE),)
+	$(error RAM_SIZE is not defined. Please specify the RAM size of the target device in the Makefile)
+endif
+ifeq ($(FLASH_SIZE),)
+	$(error FLASH_SIZE is not defined. Please specify the flash size of the target device in the Makefile)
+endif
+ifeq ($(UPLOAD_TARGET_DEVICE),)
+	$(error UPLOAD_TARGET_DEVICE is not defined. Please specify the target device in the Makefile)
+endif
+ifeq ($(UPLOAD_PROGRAMMER),)
+	$(error UPLOAD_PROGRAMMER is not defined. Please specify the programmer in the Makefile)
+endif
 
 # Builds firmware
 build: clean build_make_param_check toolchain_check $(OBJ)/$(FW_BIN).hex size_check 
@@ -206,10 +206,10 @@ build: clean build_make_param_check toolchain_check $(OBJ)/$(FW_BIN).hex size_ch
 	@echo "Firmware: $(OBJ)/$(FW_BIN).hex"
 
 build_make_param_check:
-	# Check if BUILD_TARGET_DEVICE is defined
-	ifeq ($(BUILD_TARGET_DEVICE),)
-		$(error BUILD_TARGET_DEVICE is not defined. Please specify the target device in the Makefile)
-	endif
+# Check if BUILD_TARGET_DEVICE is defined
+ifeq ($(BUILD_TARGET_DEVICE),)
+	$(error BUILD_TARGET_DEVICE is not defined. Please specify the target device in the Makefile)
+endif
 
 # Prints size of firmware and checks if it fits into the flash and ram of the target device
 size_check: $(OBJ)/$(FW_BIN).elf $(OBJ)/$(FW_BIN).hex toolchain_check
