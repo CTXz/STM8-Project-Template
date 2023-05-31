@@ -24,6 +24,7 @@ peripheral library.
   - [Prepping the interrupts: src/stm8s\_it.c, include/stm8s\_it.h](#prepping-the-interrupts-srcstm8s_itc-includestm8s_ith)
     - [A technical note on the interrupt handlers](#a-technical-note-on-the-interrupt-handlers)
 - [Adding libraries](#adding-libraries)
+- [VSCode](#vscode)
 - [Final words](#final-words)
 
 
@@ -313,6 +314,10 @@ That being said, while we can define the interrupt handlers in the main file, ke
 
 To add libraries to your project, first add the library files to the [`lib`](lib) folder. Within the makefile, you will find numerous commented out
 definitions that start with `EXAMPLELIB_`. With a bit of makefile knowledge, these should provide a decemt example on how to add libraries to your project.
+
+## VSCode
+
+While this template project is not specifically designed for VSCode, it does include a `.vscode` folder with a `tasks.json` file that allows you to comfortably run the `build`, `clean` and `upload` targets from within VSCode. To execute a task, simply press `Ctrl+Shift+P` and type `Run Task`. You will then be presented with a list of available tasks. Alternatively you can use extensions such as [Task Explorer](https://marketplace.visualstudio.com/items?itemName=spmeesseman.vscode-taskexplorer) to run tasks from within the sidebar.
 
 ## Final words
 
