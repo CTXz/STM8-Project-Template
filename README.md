@@ -228,8 +228,8 @@ In the main function we then initialize the GPIOs and the external interrupts.
 ```c
 int main() {
   // Initialize the GPIOs
-      GPIO_Init(GPIOB, GPIO_PIN_5, GPIO_MODE_OUT_PP_LOW_FAST); // LED
-  GPIO_Init(GPIOD, GPIO_PIN_ALL, GPIO_MODE_IN_PU_IT); // Button with internal pull-up resistor and external interrupt enabled
+  GPIO_Init(GPIOB, GPIO_PIN_5, GPIO_MODE_OUT_PP_LOW_FAST); // LED
+  GPIO_Init(GPIOD, GPIO_PIN_ALL, GPIO_MODE_IN_PU_IT);      // Button with internal pull-up resistor and external interrupt enabled
 ```
 
 We then set the external interrupt sensitivity to rising edge and enable the interrupts.
@@ -252,8 +252,8 @@ All in all our main function should look like this:
 ```c
 int main() {
   // Initialize the GPIOs
-      GPIO_Init(GPIOB, GPIO_PIN_5, GPIO_MODE_OUT_PP_LOW_FAST); // LED
-  GPIO_Init(GPIOD, GPIO_PIN_ALL, GPIO_MODE_IN_PU_IT); // Button with internal pull-up resistor and external interrupt enabled
+  GPIO_Init(GPIOB, GPIO_PIN_5, GPIO_MODE_OUT_PP_LOW_FAST); // LED
+  GPIO_Init(GPIOD, GPIO_PIN_ALL, GPIO_MODE_IN_PU_IT);      // Button with internal pull-up resistor and external interrupt enabled
 
   // Initialize the external interrupts
   EXTI_SetExtIntSensitivity(EXTI_PORT_GPIOD, EXTI_SENSITIVITY_RISE_ONLY);
