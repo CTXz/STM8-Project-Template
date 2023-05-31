@@ -9,9 +9,7 @@ As a nice bonus, the toolchain provided by the template only bundles free and op
  - [sdccrm](https://github.com/XaviDCR92/sdccrm) for dead code elimination
  - [stm8-binutils-gdb](https://stm8-binutils-gdb.sourceforge.io/) for binary utilities and debugging
 
-As can be seen from the list above, dead code elimination is also taken care of by the template via [sdccrm](https://github.com/XaviDCR92/sdccrm), which is particularly useful
-since SDCC in itself does not perform any dead code elimination, quickly filling up the STM8's limited flash memory when using the standard
-peripheral library.
+As can be seen from the list above, dead code elimination is also taken care of by the template via [sdccrm](https://github.com/XaviDCR92/sdccrm). This is very convenient because SDCC lacks native dead code elimination, causing the STM8's limited flash memory to deplete rapidly, especially when utilizing the standard peripheral library.
 
 ## Table of contents <!-- omit in toc -->
 
