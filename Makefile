@@ -65,7 +65,7 @@ MKDIR      := mkdir
 CP         := cp
 
 # Build flags
-BUILD_TARGET_DEVICE   := # STM8S103                # Specify the target device here! (See stm8s.h for available devices)
+BUILD_TARGET_DEVICE   := STM8S103                # Specify the target device here! (See stm8s.h for available devices)
 DEFINES               := -D$(BUILD_TARGET_DEVICE) # -DEXAMPLE_DEFINE -DANOTHER_DEFINE
 
 # Object files directory and extension
@@ -167,10 +167,10 @@ CC_FLAGS        := -mstm8 --out-fmt-elf -c --opt-code-size $(INCLUDE)
 # Please modify the parameters below to match your needs!
 # The default values provided assume an STM8S103F3 target device and the stlinkv2 as a programmer
 
-RAM_SIZE                := # 1024        # Specify the RAM size of the target device here!
-FLASH_SIZE              := # 8096        # Specify the flash size of the target device here!
-UPLOAD_TARGET_DEVICE    := # stm8s103f3 # Specify the target device for flashing here! See stm8flash -l for a list of supported devices
-UPLOAD_PROGRAMMER       := # stlinkv2   # Specify the programmer (stlink, stlinkv2, stlinkv21, stlinkv3, or espstlink) to use for flashing here!
+RAM_SIZE                := 1024        # Specify the RAM size of the target device here!
+FLASH_SIZE              := 8096        # Specify the flash size of the target device here!
+UPLOAD_TARGET_DEVICE    := stm8s103f3 # Specify the target device for flashing here! See stm8flash -l for a list of supported devices
+UPLOAD_PROGRAMMER       := stlinkv2   # Specify the programmer (stlink, stlinkv2, stlinkv21, stlinkv3, or espstlink) to use for flashing here!
 UPLOAD_FLAGS            := -c $(UPLOAD_PROGRAMMER) -p $(UPLOAD_TARGET_DEVICE) -w
 
 # ------------------------------------
@@ -213,18 +213,21 @@ endif
 
 # Prints size of firmware and checks if it fits into the flash and ram of the target device
 size_check: $(OBJ)/$(FW_BIN).elf $(OBJ)/$(FW_BIN).hex toolchain_check
-	@echo "\nPROGRAM SIZE:"
+	@echo "\nPROGRAM SIZE:"; \
 	TOO_LARGE_RAM=0; \
 	TOO_LARGE_FLASH=0; \
 	USED_RAM=$$($(SIZE) -A $(OBJ)/$(FW_BIN).elf | grep -o 'DATA.*[0-9]* ' | grep -o '[0-9]*' || echo 0 ); \
+	USED_RAM=$$(echo $$USED_RAM | tr -d '[:space:]' ); \
+	RAM_SIZE=$$(echo $(RAM_SIZE) | tr -d '[:space:]' ); \
 	echo "------------------------------------------------------"; \
-	echo "RAM:\tUsed $$USED_RAM bytes from $(RAM_SIZE) bytes ($$(((100 * USED_RAM)/$(RAM_SIZE)))%)"; \
+	echo "RAM:\tUsed $$USED_RAM bytes from $$RAM_SIZE bytes ($$(((100 * USED_RAM)/$(RAM_SIZE)))%)"; \
 	if [ $$USED_RAM -gt $(RAM_SIZE) ]; then \
 		TOO_LARGE_RAM=1; \
 	fi; \
-	USED_FLASH=$$($(SIZE) $(OBJ)/$(FW_BIN).hex | grep -E -o '.{13}$(OBJ)/$(FW_BIN).hex' | cut -c1-4 \
-		| tr -d '[:space:]' || echo 0); \
-	echo "FLASH:\tUsed $$USED_FLASH bytes from $(FLASH_SIZE) bytes ($$(((100 * USED_FLASH)/$(FLASH_SIZE)))%)"; \
+	USED_FLASH=$$($(SIZE) $(OBJ)/$(FW_BIN).hex | grep -E -o '.{13}$(OBJ)/$(FW_BIN).hex' | cut -c1-4 || echo 0); \
+	USED_FLASH=$$(echo $$USED_FLASH | tr -d '[:space:]' ); \
+	FLASH_SIZE=$$(echo $(FLASH_SIZE) | tr -d '[:space:]' ); \
+	echo "FLASH:\tUsed $$USED_FLASH bytes from $$FLASH_SIZE bytes ($$(((100 * USED_FLASH)/$(FLASH_SIZE)))%)"; \
 	if [ $$USED_FLASH -gt $(FLASH_SIZE) ]; then \
 		TOO_LARGE_FLASH=1; \
 	fi; \
