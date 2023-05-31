@@ -65,8 +65,8 @@ MKDIR      := mkdir
 CP         := cp
 
 # Build flags
-BUILD_TARGET_DEVICE   := STM8S103                # Specify the target device here! (See stm8s.h for available devices)
-DEFINES               := -D$(BUILD_TARGET_DEVICE) # -DEXAMPLE_DEFINE -DANOTHER_DEFINE
+BUILD_TARGET_DEVICE   := # STM8S103                # Specify the target device here! (See stm8s.h for available devices)
+DEFINES               := -D$(BUILD_TARGET_DEVICE)  # -DEXAMPLE_DEFINE -DANOTHER_DEFINE
 
 # Object files directory and extension
 OBJ       := ./build
@@ -167,10 +167,10 @@ CC_FLAGS        := -mstm8 --out-fmt-elf -c --opt-code-size $(INCLUDE)
 # Please modify the parameters below to match your needs!
 # The default values provided assume an STM8S103F3 target device and the stlinkv2 as a programmer
 
-RAM_SIZE                := 1024        # Specify the RAM size of the target device here!
-FLASH_SIZE              := 8096        # Specify the flash size of the target device here!
-UPLOAD_TARGET_DEVICE    := stm8s103f3 # Specify the target device for flashing here! See stm8flash -l for a list of supported devices
-UPLOAD_PROGRAMMER       := stlinkv2   # Specify the programmer (stlink, stlinkv2, stlinkv21, stlinkv3, or espstlink) to use for flashing here!
+RAM_SIZE                := # 1024        # Specify the RAM size of the target device here!
+FLASH_SIZE              := # 8096        # Specify the flash size of the target device here!
+UPLOAD_TARGET_DEVICE    := # stm8s103f3  # Specify the target device for flashing here! See stm8flash -l for a list of supported devices
+UPLOAD_PROGRAMMER       := # stlinkv2    # Specify the programmer (stlink, stlinkv2, stlinkv21, stlinkv3, or espstlink) to use for flashing here!
 UPLOAD_FLAGS            := -c $(UPLOAD_PROGRAMMER) -p $(UPLOAD_TARGET_DEVICE) -w
 
 # ------------------------------------
@@ -517,7 +517,7 @@ toolchain_sdccrm:
 	@echo "Building sdccrm..."
 	@echo
 	@sleep 2
-	@cd $(TOOLCHAIN_BUILD_DIR)/ \
+	@cd $(TOOLCHAIN_BUILD_DIR)/sdccrm \
 	sdccrm && \
 	export PATH="$(TOOLCHAIN_BIN_DIR):$$PATH" && \
 	$(MAKE) && \
