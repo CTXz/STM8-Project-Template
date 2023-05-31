@@ -81,7 +81,8 @@ FW_OBJ     := $(OBJ)/firmware
 FW_OBJS    := $(patsubst $(FW_SRC)/%.c,$(FW_OBJ)/%.$(OBJ_EXT),$(FW_SRCS))
 FW_MM      := $(OBJ)/firmware
 FW_MMS     := $(patsubst $(FW_SRC)/%.c,$(FW_MM)/%.d,$(FW_SRCS))
-FW_ASMS    := $(patsubst $(FW_SRC)/%.c,$(FW_MM)/%.asm,$(FW_SRCS))
+FW_ASM     := $(OBJ)/firmware
+FW_ASMS    := $(patsubst $(FW_SRC)/%.c,$(FW_ASM)/%.asm,$(FW_SRCS))
 
 # SPL related definitions
 SPL_INCLUDE     := $(addprefix -I, lib/STM8S_StdPeriph_Driver/inc)
@@ -95,7 +96,8 @@ SPL_OBJ         := $(OBJ)/lib/STM8S_StdPeriph_Driver
 SPL_OBJS        := $(patsubst $(SPL_SRC)/%.c,$(SPL_OBJ)/%.$(OBJ_EXT),$(SPL_SRCS))
 SPL_MM          := $(OBJ)/lib/STM8S_StdPeriph_Driver
 SPL_MMS         := $(patsubst $(SPL_SRC)/%.c,$(SPL_MM)/%.d,$(SPL_SRCS))
-SPL_ASMS        := $(patsubst $(SPL_SRC)/%.c,$(SPL_MM)/%.asm,$(SPL_SRCS))
+SPL_ASM         := $(OBJ)/lib/STM8S_StdPeriph_Driver
+SPL_ASMS        := $(patsubst $(SPL_SRC)/%.c,$(SPL_ASM)/%.asm,$(SPL_SRCS))
 
 # Library related definitions
 # Include and adjust to your needs if you intend to compile a library
@@ -107,7 +109,8 @@ SPL_ASMS        := $(patsubst $(SPL_SRC)/%.c,$(SPL_MM)/%.asm,$(SPL_SRCS))
 # EXAMPLELIB_OBJS    := $(patsubst $(EXAMPLELIB_SRC)/%.c,$(EXAMPLELIB_OBJ)/%.$(OBJ_EXT),$(EXAMPLELIB_SRCS))
 # EXAMPLELIB_MM      := $(OBJ)/lib/EXAMPLELIB
 # EXAMPLELIB_MMS     := $(patsubst $(EXAMPLELIB_SRC)/%.c,$(EXAMPLELIB_MM)/%.d,$(EXAMPLELIB_SRCS))
-# EXAMPLELIB_ASMS    := $(patsubst $(EXAMPLELIB_SRC)/%.c,$(EXAMPLELIB_MM)/%.asm,$(EXAMPLELIB_SRCS))
+# EXAMPLELIB_ASM     := $(OBJ)/lib/EXAMPLELIB
+# EXAMPLELIB_ASMS    := $(patsubst $(EXAMPLELIB_SRC)/%.c,$(EXAMPLELIB_ASM)/%.asm,$(EXAMPLELIB_SRCS))
 
 # All sources, objects and assembler files
 SRCS            := $(FW_SRCS) $(SPL_SRCS) # $(EXAMPLELIB_SRCS)
@@ -124,39 +127,28 @@ LIBS            := $(addprefix -l, stm8)
 AS_FLAGS = -plosg -ff
 
 # Dead Code Elimination related definitions
-# Symbols to be excluded from dead code elimination
-# Unfortunately, the DCE tool is not very smart and will mistakenly exclude
+
+# Unfortunately, the DCE tool is not very smart and will sometimes mistakenly exclude
 # code that is actually used (e.g. function pointers and interrupts, as these are
-# not executed with a simple call instruction). As a workaround, the DCE_EXCLUDE
+# not executed with a simple call instruction). As a workaround, the DCE_EXCLUDE_SYMBOLS
 # variable can be used to specify symbols that should not be excluded from the
 # final binary.
-# If the linker complains about missing symbols after enabling DCE, try to add them
-# to the DCE_EXCLUDE variable.
-DCE_EXCLUDE     := -x _CLK_IRQHandler \
-                   -x _EXTI_PORTA_IRQHandler \
-                   -x _EXTI_PORTB_IRQHandler \
-                   -x _EXTI_PORTC_IRQHandler \
-                   -x _EXTI_PORTD_IRQHandler \
-                   -x _EXTI_PORTE_IRQHandler \
-                   -x _TLI_IRQHandler \
-                   -x _SPI_IRQHandler \
-                   -x _TIM2_UPD_OVF_BRK_IRQHandler \
-                   -x _AWU_IRQHandler \
-                   -x _TIM4_UPD_OVF_IRQHandler \
-                   -x _EEPROM_EEC_IRQHandler \
-                   -x _UART1_RX_IRQHandler \
-                   -x _TRAP_IRQHandler \
-                   -x _TIM1_UPD_OVF_TRG_BRK_IRQHandler \
-                   -x _UART1_TX_IRQHandler \
-                   -x _ADC1_IRQHandler \
-                   -x _I2C_IRQHandler \
-                   -x _TIM1_CAP_COM_IRQHandler \
-                   -x _TIM2_CAP_COM_IRQHandler \
-                   -x _UART1_ReceiveData8 \
-                   -x _UART1_ClearITPendingBit \
-                   -x _HSIDivFactor
 
-DCE_FLAGS       := -r $(DCE_EXCLUDE)
+# If the linker complains about missing symbols after enabling DCE, try to add them
+# to the DCE_EXCLUDE_SYMBOLS variable.
+
+# If you wish to exclude a whole file from DCE, you can do so by adding it to the
+# DCE_EXCLUDE_ASM variable, where the exact path to the generated assembly file
+# must be specified.
+
+DCE_EXCLUDE_SYMBOLS := #-x _example_symbol1 \
+                       #-x _example_symbol2 \
+                       #-x _example_symbol3
+
+DCE_EXCLUDE_ASM := $(FW_ASM)/stm8s_it.asm
+
+DCE_FLAGS       := -r $(DCE_EXCLUDE_SYMBOLS)
+DCE_ASMS        :=  $(filter-out $(DCE_EXCLUDE_ASM), $(ASMS))
 
 # Compiler flags
 INCLUDE         := $(STM8S_CFG_INCLUDE) $(FW_INCLUDE) $(SPL_INCLUDE) # $(EXAMPLELIB_INCLUDE)
@@ -254,7 +246,7 @@ $(OBJ)/$(FW_BIN).elf: dce $(OBJS) toolchain_check
 
 # Applies dead code elimination on assembly files
 dce: $(ASMS) toolchain_check
-	$(DCE) $(DCE_FLAGS) $(ASMS)
+	$(DCE) $(DCE_FLAGS) $(DCE_ASMS)
 
 # Builds assembly files from c files
 asm: $(ASMS)

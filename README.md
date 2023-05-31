@@ -147,7 +147,8 @@ This template uses [sdccrm](https://github.com/XaviDCR92/sdccrm) for dead code e
 removes code that is actually used (ex. interrupt handlers, functions called via function pointers, etc.). This will manifest itself through
 missing symbol errors from the linker. If you run into this issue, you can manually exclude the missing symbols from dead code elimination 
 by adding them to the `DCE_EXCLUDE` list in the Makefile. If your linker complains about missing symbols but you're certain that they're defined,
-try adding them to the `DCE_EXCLUDE` list!
+try adding them to the `DCE_EXCLUDE` list! Should that not do the trick, you can opt to exclude a whole assembly file from dead code elimination
+by adding it to the `DCE_EXCLUDE_ASM` list in the Makefile.
 
 To flash the device, attach the programmer and use the following command:
 
