@@ -1,3 +1,71 @@
+# README README README README README README README README README README README README README README
+#
+# Template Makefile for STM8S103F3P6 Project
+#
+# ---- Overview ----
+#
+# The following makefile contains targets to build and flash
+# a STM8S103F3P6 project using the SDCC compiler and STM8 binutils.
+# Notably, the makefile:
+# 	- builds the standard peripheral library
+# 	- builds all source files in the src directory
+# 	- eliminates unused code sections during linking via XaviDCR92's SDCC and STM8 binutils fork
+#	- generates a .ihx file for flashing
+# The ihx file can be flashed via the make flash or make upload target.
+#
+# ---- Installing the Toolchain ----
+#
+# To use the makefile, ensure that the necessary toolchain is installed.
+# The toolchain can be built as follows:
+# 	1. Run make ubuntu_deps to install the necessary dependencies on Debian/Ubuntu systems
+#         For other systems, please install the following dependencies manually:
+#         - subversion bison flex libboost dev zlib1g dev git texinfo pkg config 
+#	    libusb-1.0-0 dev perl autoconf automake help2man
+#
+# 	2. Run `make toolchain` to build the toolchain. This may take a while.
+# 	   The toolchain will be installed to the stm8-toolchain directory
+#	   and contains the following tools:
+#		- XaviDCR92's SDCC Fork: SDCC compiler with GNU-GAS support for STM8
+#		- XaviDCR92's STM8 Binutils Fork: Binutils with STM8 support
+#		- stm8flash: Flashing tool for STM8
+# 	   XaviDCR92's SDCC fork is used to eliminate unused code sections by compiling the code into
+#	   GNU assembler format, which is then linked using XaviDCR92's STM8 binutils fork. Unlike the
+#	   standard SDCC linker, the GAS linker can eliminate unused code sections, vastly reducing the
+#	   size of the final binary. See https://github.com/XaviDCR92/stm8-dce-example for more information.
+#
+# 	3. After building the toolchain, you may run `make clean_toolchain` 
+#	   to remove the toolchain build files
+#
+# ---- Configuring the Makefile ----
+# 
+# For STM8S103F3P6 projects, the makefile should work out of the box and
+# compile all source files in the src directory as well as the standard peripheral library.
+#
+# For other STM8S variants, please alter the following variables in the makefile:
+# 	- In "Build options": Change the DEFINE variable to the appropriate STM8S variant
+# 	- In "Flash Options": Change the FLASH_FLAGS variable to the appropriate STM8S variant
+# 	- In "Standard Peripheral Library": Comment and uncomment the peripheral modules that apply to your STM8S variant
+#	- Also adjust the linker file (elf32stm8s103f3.x) to match your STM8S variant. The section sizes can be
+#	  found in the memory map section of the STM8S variant's datasheet. In the make "Build options" section,
+#	  change the LD_FLAGS variable to point to the appropriate linker file.
+#
+# ---- Building the Project ----
+#
+# First, source the toolchain environment:
+# 	source stm8-toolchain/env.sh
+#
+# The following targets are available:
+# 	- make: Builds the project into a .ihx file
+# 	- make flash: Flashes the .ihx file
+# 	- make upload: Same as make flash
+# NOTE: If you're not using a stlinkv2 programmer, please adjust the FLASH_FLAGS variable in the
+#       "Flash Options" section of the makefile
+#
+# From here on, feel free to adjust the makefile to suit your project's needs.
+#
+# README README README README README README README README README README README README README README
+
+
 #######################################
 # Toolchain
 #######################################
