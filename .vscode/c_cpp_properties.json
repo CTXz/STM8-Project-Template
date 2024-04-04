@@ -7,10 +7,11 @@
                 "${workspaceFolder}/include/**",
                 "${workspaceFolder}/lib/**",
                 "${workspaceFolder}/lib/STM8S_StdPeriph_Driver/**",
-                "${workspaceFolder}/lib/STM8S_StdPeriph_Driver/inc/**",
+                "${workspaceFolder}/lib/STM8S_StdPeriph_Driver/inc/**"
             ],
             "defines": [],
-            "configurationProvider": "ms-vscode.makefile-tools"
+            "configurationProvider": "ms-vscode.makefile-tools",
+            "compilerPath": "/usr/local/bin/sdcc"
         }
     ],
     "version": 4
