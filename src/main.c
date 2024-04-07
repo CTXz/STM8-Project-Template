@@ -1,9 +1,26 @@
 #include <stm8s.h>
 #include <stm8s_it.h>
 #include <stm8s_gpio.h>
+#include <stdlib.h>
 
 #define LED_GPIO GPIOB
 #define LED_PIN GPIO_PIN_5
+
+void small_delay(void)
+{
+	for (uint32_t i = 0; i < 1000; i++)
+	{
+		__asm__("nop");
+	}
+}
+
+void delay(uint32_t ms)
+{
+	for (uint32_t i = 0; i < ms; i++)
+	{
+		small_delay();
+	}
+}
 
 void main(void)
 {
@@ -12,8 +29,7 @@ void main(void)
 	while (TRUE)
 	{
 		GPIO_WriteReverse(LED_GPIO, LED_PIN);
-		for (uint32_t i = 0; i < 100000; i++)
-			;
+		delay(100);
 	}
 }
 

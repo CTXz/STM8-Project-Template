@@ -71,10 +71,12 @@
 #######################################
 
 CC = sdcc
-LD = stm8-ld
-AS = stm8-as
+LD = sdcc
+AS = sdasstm8
 FLASH = stm8flash
 OBJCOPY = stm8-objcopy
+SIZE = stm8-size
+DCE = stm8dce/stm8dce.py
 
 MKDIR = mkdir
 CP = cp
@@ -95,11 +97,8 @@ INCLUDE = $(addprefix -I, \
 	src/ \
 )
 
-# Assembler flags
-AS_FLAGS =
-
 # Compiler flags
-CC_FLAGS = -mstm8 --out-fmt-elf -c --debug --opt-code-size --asm=gas --function-sections --data-sections $(INCLUDE)
+CC_FLAGS = -mstm8 --out-fmt-elf -c --opt-code-size $(INCLUDE)
 
 # Project name
 PROJECT = Template
@@ -107,21 +106,31 @@ PROJECT = Template
 # Build directory
 BUILD_DIR = build
 
-# Objects
+# Assembly files
+ASM_DIR = $(BUILD_DIR)/asm
+AS_FLAGS = -plosg -ff
+
+# Dead Code Elimination
+DCE_DIR = $(BUILD_DIR)/dce
+DCE_FLAGS =
+
+# Object files
 OBJ_DIR = $(BUILD_DIR)/obj
 
 # Source files
 VPATH += src
 SRC_FILES = $(wildcard src/*.c) # Compile all .c files in src directory
-OBJECTS += $(addprefix $(OBJ_DIR)/, $(notdir $(SRC_FILES:.c=.o)))
 
 # Linker flags
-LD_FLAGS = -T./elf32stm8s103f3.x --print-memory-usage --gc-sections -Map $(OBJ_DIR)/map_$(PROJECT).map
-LIB_DIRS = $(addprefix -L, /usr/local/share/sdcc/lib/stm8)
+LD_FLAGS = -mstm8 --out-fmt-elf --opt-code-size
+LIBS = $(addprefix -l, stm8)
 
-# Source dependencies:
-DEPS = $(OBJECTS:.o=.d)
-ASM_DEPS = $(OBJECTS:.o=.asm)
+# ELF to HEX flags
+OBJCOPY_FLAGS =
+
+# Size Check
+RAM_SIZE = 1024
+FLASH_SIZE = 8192
 
 #######################################
 # Flash Options
@@ -140,70 +149,105 @@ INCLUDE += -Ilib/STM8S_StdPeriph_Driver/inc
 # Which peripherals apply to your STM8S variant can be found out
 # by looking at the STM8S_StdPeriph_Driver/inc/stm8s.h file or
 
-STDPERIPH_OBJECTS 	+= $(addprefix $(OBJ_DIR)/, stm8s_adc1.o)
-# STDPERIPH_OBJECTS 	+= $(addprefix $(OBJ_DIR)/, stm8s_adc2.o)
-STDPERIPH_OBJECTS 	+= $(addprefix $(OBJ_DIR)/, stm8s_awu.o)
-STDPERIPH_OBJECTS 	+= $(addprefix $(OBJ_DIR)/, stm8s_beep.o)
-# STDPERIPH_OBJECTS 	+= $(addprefix $(OBJ_DIR)/, stm8s_can.o)
-STDPERIPH_OBJECTS 	+= $(addprefix $(OBJ_DIR)/, stm8s_clk.o)
-STDPERIPH_OBJECTS 	+= $(addprefix $(OBJ_DIR)/, stm8s_exti.o)
-STDPERIPH_OBJECTS 	+= $(addprefix $(OBJ_DIR)/, stm8s_flash.o)
-STDPERIPH_OBJECTS 	+= $(addprefix $(OBJ_DIR)/, stm8s_gpio.o)
-STDPERIPH_OBJECTS 	+= $(addprefix $(OBJ_DIR)/, stm8s_i2c.o)
-STDPERIPH_OBJECTS 	+= $(addprefix $(OBJ_DIR)/, stm8s_itc.o)
-STDPERIPH_OBJECTS 	+= $(addprefix $(OBJ_DIR)/, stm8s_iwdg.o)
-STDPERIPH_OBJECTS 	+= $(addprefix $(OBJ_DIR)/, stm8s_rst.o)
-STDPERIPH_OBJECTS 	+= $(addprefix $(OBJ_DIR)/, stm8s_spi.o)
-STDPERIPH_OBJECTS 	+= $(addprefix $(OBJ_DIR)/, stm8s_tim1.o)
-STDPERIPH_OBJECTS 	+= $(addprefix $(OBJ_DIR)/, stm8s_tim2.o)
-# STDPERIPH_OBJECTS 	+= $(addprefix $(OBJ_DIR)/, stm8s_tim3.o)
-# STDPERIPH_OBJECTS 	+= $(addprefix $(OBJ_DIR)/, stm8s_tim4.o)
-# STDPERIPH_OBJECTS 	+= $(addprefix $(OBJ_DIR)/, stm8s_tim5.o)
-# STDPERIPH_OBJECTS 	+= $(addprefix $(OBJ_DIR)/, stm8s_tim6.o)
-STDPERIPH_OBJECTS 	+= $(addprefix $(OBJ_DIR)/, stm8s_uart1.o)
-# STDPERIPH_OBJECTS 	+= $(addprefix $(OBJ_DIR)/, stm8s_uart2.o)
-# STDPERIPH_OBJECTS 	+= $(addprefix $(OBJ_DIR)/, stm8s_uart3.o)
-# STDPERIPH_OBJECTS 	+= $(addprefix $(OBJ_DIR)/, stm8s_uart4.o)
-STDPERIPH_OBJECTS 	+= $(addprefix $(OBJ_DIR)/, stm8s_wwdg.o)
+STDPER_SRC 	+= stm8s_adc1.c
+# STDPER_SRC 	+= stm8s_adc2.c
+STDPER_SRC 	+= stm8s_awu.c
+STDPER_SRC 	+= stm8s_beep.c
+# STDPER_SRC 	+= stm8s_can.c
+STDPER_SRC 	+= stm8s_clk.c
+STDPER_SRC 	+= stm8s_exti.c
+STDPER_SRC 	+= stm8s_flash.c
+STDPER_SRC 	+= stm8s_gpio.c
+STDPER_SRC 	+= stm8s_i2c.c
+STDPER_SRC 	+= stm8s_itc.c
+STDPER_SRC 	+= stm8s_iwdg.c
+STDPER_SRC 	+= stm8s_rst.c
+STDPER_SRC 	+= stm8s_spi.c
+STDPER_SRC 	+= stm8s_tim1.c
+STDPER_SRC 	+= stm8s_tim2.c
+# STDPER_SRC 	+= stm8s_tim3.c
+# STDPER_SRC 	+= stm8s_tim4.c
+# STDPER_SRC 	+= stm8s_tim5.c
+# STDPER_SRC 	+= stm8s_tim6.c
+STDPER_SRC 	+= stm8s_uart1.c
+# STDPER_SRC 	+= stm8s_uart2.c
+# STDPER_SRC 	+= stm8s_uart3.c
+# STDPER_SRC 	+= stm8s_uart4.c
+STDPER_SRC 	+= stm8s_wwdg.c
 
-OBJECTS += $(STDPERIPH_OBJECTS)
+SRC_FILES += $(STDPER_SRC)
 
 #######################################
 # Project targets
 #######################################
 
-$(BUILD_DIR)/$(PROJECT).ihx: $(BUILD_DIR)/$(PROJECT).elf
-	$(CP) $< $@
-	$(OBJCOPY) -O ihex $@ $@
+ASM = $(addprefix $(ASM_DIR)/, $(notdir $(SRC_FILES:.c=.asm)))
+DCE_ASM = $(addprefix $(DCE_DIR)/, $(notdir $(ASM:.asm=.asm)))
+OBJ = $(addprefix $(OBJ_DIR)/, $(notdir $(ASM:.asm=.rel)))
 
-# ELF file
-$(BUILD_DIR)/$(PROJECT).elf: $(OBJECTS)
-	@$(MKDIR) -p $(BUILD_DIR)
-	$(LD) $^ -o $@ $(LD_FLAGS) $(LIBS)
-
-$(OBJ_DIR)/%.d: %.c
-	@$(MKDIR) -p $(OBJ_DIR)
-	$(CC) $< $(DEFINE) $(CC_FLAGS) -MM > $@
-
-# 
-$(OBJ_DIR)/%.o: %.c $(OBJ_DIR)/%.d
-	@$(MKDIR) -p $(OBJ_DIR)
-	$(CC) $< $(DEFINE) $(CC_FLAGS) -o $@
-
-# Assemble using STM8 binutils
-$(OBJ_DIR)/%.o: %.asm
-	@$(MKDIR) -p $(OBJ_DIR)
-	$(AS) $< $(AS_FLAGS) -o $@
+all: size_check $(BUILD_DIR)/$(PROJECT).ihx
 
 # Upload/Flash
-flash: $(BUILD_DIR)/$(PROJECT).ihx
+flash: $(BUILD_DIR)/$(PROJECT).ihx size_check
 	$(FLASH) $(FLASH_FLAGS) -w $<
 
 upload: flash
 
+# Prints size of firmware and checks if it fits into the flash and ram of the target device
+size_check: $(BUILD_DIR)/$(PROJECT).elf
+	@echo "\nPROGRAM SIZE:"; \
+	TOO_LARGE_RAM=0; \
+	TOO_LARGE_FLASH=0; \
+	USED_RAM=$$($(SIZE) -A $< | grep -o 'DATA.*[0-9]* ' | grep -o '[0-9]*' || echo 0 ); \
+	USED_RAM=$$(echo $$USED_RAM | tr -d '[:space:]' ); \
+	RAM_SIZE=$$(echo $(RAM_SIZE) | tr -d '[:space:]' ); \
+	echo "------------------------------------------------------"; \
+	echo "RAM:\tUsed $$USED_RAM bytes from $$RAM_SIZE bytes ($$(((100 * USED_RAM)/$(RAM_SIZE)))%)"; \
+	if [ $$USED_RAM -gt $(RAM_SIZE) ]; then \
+		TOO_LARGE_RAM=1; \
+	fi; \
+	TOTAL=$$($(SIZE) -A $< | grep -o 'Total.*[0-9]' | grep -o '[0-9]*' || echo 0 ); \
+	TOTAL=$$(echo $$TOTAL | tr -d '[:space:]' ); \
+	USED_FLASH=$$((TOTAL - USED_RAM)); \
+	FLASH_SIZE=$$(echo $(FLASH_SIZE) | tr -d '[:space:]' ); \
+	echo "FLASH:\tUsed $$USED_FLASH bytes from $$FLASH_SIZE bytes ($$(((100 * USED_FLASH)/$(FLASH_SIZE)))%)"; \
+	if [ $$USED_FLASH -gt $(FLASH_SIZE) ]; then \
+		TOO_LARGE_FLASH=1; \
+	fi; \
+	echo "------------------------------------------------------"; \
+	if [ $$TOO_LARGE_RAM -eq 1 ]; then echo "ERROR: Program exceeds RAM!"; fi; \
+	if [ $$TOO_LARGE_FLASH -eq 1 ]; then echo "ERROR: Program exceeds FLASH!"; fi; \
+	if [ $$TOO_LARGE_RAM -eq 1 ] || [ $$TOO_LARGE_FLASH -eq 1 ]; then exit 1; fi
+
+hex: $(BUILD_DIR)/$(PROJECT).ihx
+elf: $(BUILD_DIR)/$(PROJECT).elf
+obj: $(OBJ)
+asm: $(ASM)
+dce: $(DCE_ASM)
+
+$(BUILD_DIR)/$(PROJECT).ihx: $(BUILD_DIR)/$(PROJECT).elf
+	$(OBJCOPY) $(OBJCOPY_FLAGS) $< -O ihex $@
+
+# ELF file
+$(BUILD_DIR)/$(PROJECT).elf: $(OBJ)
+	@$(MKDIR) -p $(BUILD_DIR)
+	$(LD) $(LD_FLAGS) $(LIBS) -o $@ $^
+
+$(ASM_DIR)/%.asm: %.c
+	@$(MKDIR) -p $(ASM_DIR)
+	$(CC) $< $(DEFINE) $(CC_FLAGS) -S -o $@
+
+$(DCE_DIR)/%.asm: $(ASM)
+	@$(MKDIR) -p $(DCE_DIR)
+	$(DCE) $(DCE_FLAGS) -o $(DCE_DIR)/ $^
+
+$(OBJ_DIR)/%.rel: $(DCE_DIR)/%.asm
+	@$(MKDIR) -p $(OBJ_DIR)
+	$(AS) $(AS_FLAGS) -o $@ $<
+
 # Clean
 clean:
-	rm -rf $(OBJ_DIR)/ $(BUILD_DIR)/
+	rm -rf $(ASM_DIR)/ $(DCE_DIR) $(BUILD_DIR)/
 
 #######################################
 # Building Toolchain
@@ -230,8 +274,9 @@ TOOLCHAIN_DIR        := $(MKFILE_DIR)/stm8-toolchain
 TOOLCHAIN_BUILD_DIR  := $(TOOLCHAIN_DIR)/build
 TOOLCHAIN_BIN_DIR    := $(TOOLCHAIN_DIR)/bin
 
-STM8_BIN_UTILS_REPO  := https://github.com/XaviDCR92/stm8-binutils-gdb.git
-STM8_SDCC_REPO       := https://github.com/XaviDCR92/sdcc-gas.git
+GPUITLS_REPO		:= svn://svn.code.sf.net/p/gputils/code/trunk
+STM8_BIN_UTILS_TAR 	:= http://sourceforge.net/projects/stm8-binutils-gdb/files/latest/download?source=files
+SDCC_REPO		:= svn://svn.code.sf.net/p/sdcc/code/trunk/sdcc
 
 # Fetches dependencies for the toolchain on Ubuntu
 ubuntu_deps:
@@ -285,7 +330,7 @@ toolchain_autoconf:
 	if [ -d autoconf ]; then \
 		echo "autoconf already downloaded"; \
 	else \
-		git clone http://git.sv.gnu.org/r/autoconf.git; \
+		git clone https://git.savannah.gnu.org/git/autoconf.git; \
 	fi
 
 	@echo
@@ -313,7 +358,7 @@ toolchain_gputils:
 	if [ -d gputils ]; then \
 		echo "gputils already downloaded"; \
 	else \
-		svn checkout svn://svn.code.sf.net/p/gputils/code/trunk .; \
+		svn checkout $(GPUITLS_REPO) .; \
 	fi
 
 	@echo
@@ -332,21 +377,21 @@ toolchain_sdcc: toolchain_autoconf toolchain_gputils
 	@mkdir -p $(TOOLCHAIN_BIN_DIR)
 
 	@echo
-	@echo "Downloading XaviDCR92's GNU-GAS SDCC fork..."
+	@echo "Downloading SDCC..."
 	@echo
 	@sleep 2
 	@cd $(TOOLCHAIN_BUILD_DIR) && \
-	if [ -d sdcc-gas ]; then \
-		echo "sdcc-gas already downloaded"; \
+	if [ -d sdcc ]; then \
+		echo "sdcc already downloaded"; \
 	else \
-		git clone $(STM8_SDCC_REPO); \
+		svn checkout $(SDCC_REPO) sdcc; \
 	fi
 
 	@echo
-	@echo "Building XaviDCR92's GNU-GAS SDCC fork..."
+	@echo "Building SDCC..."
 	@echo
 	@sleep 2
-	@cd $(TOOLCHAIN_BUILD_DIR)/sdcc-gas && \
+	@cd $(TOOLCHAIN_BUILD_DIR)/sdcc && \
 	export PATH="$(TOOLCHAIN_BIN_DIR):$$PATH" && \
 	./configure --prefix=$(TOOLCHAIN_DIR) && \
 	$(MAKE) && \
@@ -354,21 +399,23 @@ toolchain_sdcc: toolchain_autoconf toolchain_gputils
 
 toolchain_stm8-binutils-gdb:
 	@echo
-	@echo "Downloading XaviDCR92's STM8 binutils-gdb fork"
+	@echo "Downloading STM8 binutils-gdb"
 	@echo
 	@sleep 2
 	@cd $(TOOLCHAIN_BUILD_DIR) && \
-	if [ -d "stm8-binutils-gdb" ]; then \
-		echo "stm8-binutils-gdb already downloaded"; \
+	if [ -d "stm8-binutils-gdb-sources" ]; then \
+		echo "stm8-binutils-gdb-sources already downloaded"; \
 	else \
-		git clone $(STM8_BIN_UTILS_REPO); \
+		wget $(STM8_BIN_UTILS_TAR) \
+		--output-document stm8-binutils-gdb-sources.tar.gz && \
+		tar -xvf stm8-binutils-gdb-sources.tar.gz; \
 	fi
 
 	@echo
-	@echo "Building XaviDCR92's STM8 binutils-gdb fork..."
+	@echo "Building STM8 binutils-gdb..."
 	@echo
 	@sleep 2
-	@cd $(TOOLCHAIN_BUILD_DIR)/stm8-binutils-gdb && \
+	@cd $(TOOLCHAIN_BUILD_DIR)/stm8-binutils-gdb-sources && \
 	export PATH="$(TOOLCHAIN_BIN_DIR):$$PATH" && \
 	./patch_binutils.sh && \
 	PREFIX=$(TOOLCHAIN_DIR) ./configure_binutils.sh && \
