@@ -50,6 +50,7 @@ from enum import Enum
 
 VERBOSE = False
 DEBUG = False
+OPT_IRQ = False
 VERSION = "0.0.1"
 
 ############################################
@@ -107,6 +108,26 @@ class GlobalDef:
         print("Line:", self.line)
 
 
+# Class to store interrupt definitions
+# Equivalent to GlobalDef, but prints differently
+class IntDef:
+    def __init__(self, path, name, line):
+        self.path = path
+        self.name = name
+        self.line = line
+
+    def __str__(self):
+        return self.name
+
+    def __repr__(self):
+        return self.name
+
+    def print(self):
+        print("Interrupt:", self.name)
+        print("File:", self.path)
+        print("Line:", self.line)
+
+
 # Class to store function definitions
 # Includes:
 #  - Path of the file the function is defined in
@@ -116,6 +137,7 @@ class GlobalDef:
 #  - End line of the function
 #  - Global definition/label assinged to the function
 #  - If the function is an IRQ handler
+#  - If the function is empty
 class Function:
     def __init__(self, path, name, start_line):
         self.path = path
@@ -125,6 +147,8 @@ class Function:
         self.end_line = None
         self.global_defs = []
         self.isr = False
+        self.isr_def = None
+        self.empty = True
 
     def __str__(self):
         return self.name
@@ -138,8 +162,7 @@ class Function:
         print("Calls:", self.calls)
         print("Start line:", self.start_line)
         print("End line:", self.end_line)
-        if self.global_defs:
-            print("Global defs:", [g.name for g in self.global_defs])
+        print("IRQ Handler:", self.isr)
 
 
 ############################################
@@ -159,6 +182,15 @@ def pseperator():
 ############################################
 
 
+# Removes comments from a line
+# This is used to prevent comments from
+# polluting the pattern matching
+# Criteria for a comment:
+#   - Starts at ';'
+def remove_comments(line):
+    return line.split(";")[0].strip()
+
+
 # Returns if the line is a comment
 # Criteria for a comment:
 #   - Start with ';'
@@ -174,8 +206,10 @@ def is_comment(line):
 def is_function_label(line):
     sline = line.strip()
 
-    if is_comment(line):
+    if is_comment(sline):
         return None
+
+    sline = remove_comments(sline)
 
     if sline.endswith(":") and sline[-2] != "$":
         return sline[:-1]
@@ -194,7 +228,8 @@ def is_function_label(line):
 
 
 def is_call(line):
-    sline = line.strip()
+    sline = remove_comments(line.strip())
+
     if sline.startswith("call"):
         return sline.split("call")[1].strip()
 
@@ -213,7 +248,7 @@ def is_call(line):
 # Critera for a interrupt return:
 #   - Is 'iret'
 def is_iret(line):
-    sline = line.strip()
+    sline = remove_comments(line.strip())
     if sline == "iret":
         return True
     return False
@@ -224,7 +259,7 @@ def is_iret(line):
 # Criteria for an area directive:
 #   - Start with '.area'
 def is_area(line):
-    sline = line.strip()
+    sline = remove_comments(line.strip())
     if sline.startswith(".area"):
         return sline.split(".area")[1].strip()
     return None
@@ -235,9 +270,20 @@ def is_area(line):
 # Critera for a global definition:
 #   - Start with '.globl'
 def is_global_def(line):
-    sline = line.strip()
+    sline = remove_comments(line.strip())
     if sline.startswith(".globl"):
         return sline.split(".globl")[1].strip()
+    return None
+
+
+# Returns if the line is an interrupt definition
+# and the name of the interrupt if it is one
+# Critera for an interrupt definition:
+#   - Start with 'int'
+def is_int_def(line):
+    sline = remove_comments(line.strip())
+    if sline.startswith("int"):
+        return sline.split("int")[1].strip()
     return None
 
 
@@ -249,6 +295,7 @@ def is_global_def(line):
 # Parses a function and returns a Function object
 # Parsing includes:
 #  - Detecting calls made by the function
+#  - Detecting if the function is empty
 #  - Detecting if the function is an IRQ handler
 #  - Detecting the end of the function
 def parse_function(fileit, label):
@@ -262,12 +309,8 @@ def parse_function(fileit, label):
         except StopIteration:
             break
 
-        # Keep track of calls made by this function
-        call = is_call(line)
-        if call and (call not in ret.calls):
-            if DEBUG:
-                print("Line {}: Call to {}".format(fileit.index, call))
-            ret.calls.append(call)
+        # Ignore comments
+        if is_comment(line):
             continue
 
         # Check if this is an IRQ handler
@@ -288,7 +331,20 @@ def parse_function(fileit, label):
             ret.end_line = fileit.index
             break
 
+        # From here on we can assume the function is not empty
+        ret.empty = False
+
+        # Keep track of calls made by this function
+        call = is_call(line)
+        if call and (call not in ret.calls):
+            if DEBUG:
+                print("Line {}: Call to {}".format(fileit.index, call))
+            ret.calls.append(call)
+            continue
+
     if DEBUG:
+        if ret.empty:
+            print("Line {}: Function {} is empty!".format(fileit.index, label))
         print("Line {}: Function {} ends here".format(fileit.index, label))
 
     return ret
@@ -324,12 +380,16 @@ def parse_code_section(fileit):
     return functions
 
 
-# Parses the file iterator and returns a list of Function objects and GlobalDef objects
+# Parses the file iterator and returns a list of:
+#   - Function objects
+#   - GlobalDef objects
+#   - IntDef objects
 # Parsing includes:
-#  - Detecting global definitions
-#  - Detecting and parsing code sections
+#   - Detecting global definitions
+#   - Detecting and parsing code sections
 def parse(fileit):
     globals = []
+    interrupts = []
     functions = []
 
     while True:
@@ -338,6 +398,7 @@ def parse(fileit):
         except StopIteration:
             break
 
+        # Global definitions
         global_def = is_global_def(line)
         if global_def:
             globals.append(GlobalDef(fileit.path, global_def, fileit.index))
@@ -347,15 +408,27 @@ def parse(fileit):
 
             continue
 
+        # Interrupt definitions
+        int_def = is_int_def(line)
+        if int_def:
+            interrupts.append(IntDef(fileit.path, int_def, fileit.index))
+
+            if DEBUG:
+                print("Line {}: Interrupt definition {}".format(fileit.index, int_def))
+
+            continue
+
         area = is_area(line)
         if area == "CODE":
             functions += parse_code_section(fileit)
 
-    return globals, functions
+    return globals, interrupts, functions
 
 
-# Parses a file and returns a list of Function objects
-# and GlobalDef objects
+# Parses a file and returns a list of:
+#   - Function objects
+#   - GlobalDef objects
+#   - IntDef objects
 # This function opens the file and creates a FileIterator
 # The actual parsing is done by the parse() function
 def parse_file(file):
@@ -433,6 +506,11 @@ def main():
     parser.add_argument("-v", "--verbose", help="Verbose output", action="store_true")
     parser.add_argument("-d", "--debug", help="Debug output", action="store_true")
     parser.add_argument("--version", action="version", version="%(prog)s " + VERSION)
+    parser.add_argument(
+        "--opt-irq",
+        help="Remove unused IRQ handlers (Caution: Removes iret's for unsued interrupts!)",
+        action="store_true",
+    )
     args = parser.parse_args()
 
     global VERBOSE
@@ -440,6 +518,9 @@ def main():
 
     global DEBUG
     DEBUG = args.debug
+
+    global OPT_IRQ
+    OPT_IRQ = args.opt_irq
 
     # Check if output directory exists
     if not os.path.exists(args.output):
@@ -453,12 +534,14 @@ def main():
     # Parse all asm files for functions
     # functions is a list of Function objects and
     # globals is a list of GlobalDef objects
-    functions = []
     globals = []
+    interrupts = []
+    functions = []
     for file in os.listdir(args.output):
         if file.endswith(".asm"):
-            g, f = parse_file(args.output + "/" + file)
+            g, i, f = parse_file(args.output + "/" + file)
             globals += g
+            interrupts += i
             functions += f
 
     # Assign GlobalDef objects to their respective functions
@@ -466,6 +549,12 @@ def main():
         f = function_by_name(functions, g.name)
         if f:
             f.global_defs.append(g)
+
+    # Assign IntDef objects to their respective functions
+    for i in interrupts:
+        f = function_by_name(functions, i.name)
+        if f:
+            f.isr_def = i
 
     # Get entry function object
     mainf = function_by_name(functions, args.entry)
@@ -481,8 +570,11 @@ def main():
     keep = [mainf] + traverse_calls(functions, mainf)
 
     # Keep interrupt handlers and all of their traversed calls
+    # but exclude unused IRQ handlers if opted by the user
     ihandlers = interrupt_handlers(functions)
     for ih in ihandlers:
+        if OPT_IRQ and ih.empty:
+            continue
         if DEBUG:
             print()
             print("Traversing IRQ handler:", ih.name)
@@ -518,15 +610,22 @@ def main():
     for f in removef:
         removeg += f.global_defs
 
+    # Remove interrupt definitions assigned to removed IRQ handlers
+    removei = []
+    for f in removef:
+        if f.isr_def:
+            removei.append(f.isr_def)
+
     if VERBOSE:
         print("Removing functions:")
         for f in removef:
             print("\t", f)
         print()
 
-    # Group functions and globals by file to reduce file I/O
+    # Group functions, globals and int defs by file to reduce file I/O
     filef = {}
     fileg = {}
+    filei = {}
     for f in removef:
         if f.path not in filef:
             filef[f.path] = []
@@ -535,23 +634,37 @@ def main():
         if g.path not in fileg:
             fileg[g.path] = []
         fileg[g.path].append(g)
+    for i in removei:
+        if i.path not in filei:
+            filei[i.path] = []
+        filei[i.path].append(i)
 
-    # Remove (comment out) unused functions
-    # and global definitions
+    # Remove (comment out) unused functions,
+    # global definitions and interrupt definitions
     for file in filef:
         with open(file, "r") as f:
             lines = f.readlines()
 
         # Global definitions
-        if fileg[file]:
+        if file in fileg:
             for g in fileg[file]:
                 lines[g.line - 1] = ";" + lines[g.line - 1]
             fileg[file].remove(g)
 
+        # Interrupt definitions
+        # These must be set to 0x000000 instead of being commented out.
+        # else remaining IRQ handlers will be moved to a different VTABLE
+        # entry!
+        if file in filei:
+            for i in filei[file]:
+                lines[i.line - 1] = "	int 0x000000\n"
+            filei[file].remove(i)
+
         # Functions
-        for f in filef[file]:
-            for i in range(f.start_line - 1, f.end_line):
-                lines[i] = ";" + lines[i]
+        if file in filef:
+            for f in filef[file]:
+                for i in range(f.start_line - 1, f.end_line):
+                    lines[i] = ";" + lines[i]
 
         with open(file, "w") as f:
             f.writelines(lines)
@@ -566,6 +679,18 @@ def main():
 
         for g in fileg[file]:
             lines[g.line - 1] = ";" + lines[g.line - 1]
+
+        with open(file, "w") as f:
+            f.writelines(lines)
+
+    # Remove interrupt definitions assigned to removed IRQ handlers
+    # if they haven't already been removed
+    for file in filei:
+        with open(file, "r") as f:
+            lines = f.readlines()
+
+        for i in filei[file]:
+            lines[i.line - 1] = "	int 0x000000\n"
 
         with open(file, "w") as f:
             f.writelines(lines)
