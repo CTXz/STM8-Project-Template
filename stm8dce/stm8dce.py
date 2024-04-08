@@ -123,7 +123,7 @@ class Function:
         self.calls = []
         self.start_line = start_line
         self.end_line = None
-        self.global_def = None
+        self.global_defs = []
         self.isr = False
 
     def __str__(self):
@@ -138,8 +138,8 @@ class Function:
         print("Calls:", self.calls)
         print("Start line:", self.start_line)
         print("End line:", self.end_line)
-        if self.global_def:
-            print("Global def:", self.global_def.line)
+        if self.global_defs:
+            print("Global defs:", [g.name for g in self.global_defs])
 
 
 ############################################
@@ -186,10 +186,25 @@ def is_function_label(line):
 # instruction, None otherwise
 # Critera for a call:
 #   - Starts with 'call'
+# or
+#   - Starts with 'jp'
+#   - Followed by a label which:
+#       - Starts with _ or a letter
+#       - Only contains letters, numbers, and '_'
+
+
 def is_call(line):
     sline = line.strip()
     if sline.startswith("call"):
         return sline.split("call")[1].strip()
+
+    if sline.startswith("jp"):
+        label = sline.split("jp")[1].strip()
+        if not (label.startswith("_") or label[0].isalpha()):
+            return None
+        if all(c.isalnum() or c == "_" for c in label):
+            return label
+
     return None
 
 
@@ -309,11 +324,10 @@ def parse_code_section(fileit):
     return functions
 
 
-# Parses the file iterator and returns a list of Function objects
+# Parses the file iterator and returns a list of Function objects and GlobalDef objects
 # Parsing includes:
 #  - Detecting global definitions
 #  - Detecting and parsing code sections
-#  - Assigning global definitions to functions
 def parse(fileit):
     globals = []
     functions = []
@@ -337,16 +351,11 @@ def parse(fileit):
         if area == "CODE":
             functions += parse_code_section(fileit)
 
-    # Assign global definitions to functions
-    for g in globals:
-        for f in functions:
-            if f.name == g.name:
-                f.global_def = g
-
-    return functions
+    return globals, functions
 
 
 # Parses a file and returns a list of Function objects
+# and GlobalDef objects
 # This function opens the file and creates a FileIterator
 # The actual parsing is done by the parse() function
 def parse_file(file):
@@ -355,12 +364,9 @@ def parse_file(file):
         print("Parsing file:", file)
         pseperator()
 
-    functions = []
     with open(file, "r") as f:
         fileit = FileIterator(f)
-        functions = parse(fileit)
-
-    return functions
+        return parse(fileit)
 
 
 ############################################
@@ -445,11 +451,21 @@ def main():
         shutil.copy(file, args.output)
 
     # Parse all asm files for functions
-    # functions is a list of Function objects
+    # functions is a list of Function objects and
+    # globals is a list of GlobalDef objects
     functions = []
+    globals = []
     for file in os.listdir(args.output):
         if file.endswith(".asm"):
-            functions += parse_file(args.output + "/" + file)
+            g, f = parse_file(args.output + "/" + file)
+            globals += g
+            functions += f
+
+    # Assign GlobalDef objects to their respective functions
+    for g in globals:
+        f = function_by_name(functions, g.name)
+        if f:
+            f.global_defs.append(g)
 
     # Get entry function object
     mainf = function_by_name(functions, args.entry)
@@ -495,39 +511,68 @@ def main():
         print()
 
     # Remove functions that are not in keep
-    remove = [f for f in functions if f not in keep]
+    removef = [f for f in functions if f not in keep]
+
+    # Remove global labels assigned to removed functions
+    removeg = []
+    for f in removef:
+        removeg += f.global_defs
 
     if VERBOSE:
         print("Removing functions:")
-        for f in remove:
+        for f in removef:
             print("\t", f)
         print()
 
-    # Categorize by file to reduce file I/O
-    files = {}
-    for f in remove:
-        if f.path not in files:
-            files[f.path] = []
-        files[f.path].append(f)
+    # Group functions and globals by file to reduce file I/O
+    filef = {}
+    fileg = {}
+    for f in removef:
+        if f.path not in filef:
+            filef[f.path] = []
+        filef[f.path].append(f)
+    for g in removeg:
+        if g.path not in fileg:
+            fileg[g.path] = []
+        fileg[g.path].append(g)
 
     # Remove (comment out) unused functions
-    for file in files:
+    # and global definitions
+    for file in filef:
         with open(file, "r") as f:
             lines = f.readlines()
 
-        for f in files[file]:
-            if f.global_def:
-                lines[f.global_def.line - 1] = ";" + lines[f.global_def.line - 1]
+        # Global definitions
+        if fileg[file]:
+            for g in fileg[file]:
+                lines[g.line - 1] = ";" + lines[g.line - 1]
+            fileg[file].remove(g)
 
+        # Functions
+        for f in filef[file]:
             for i in range(f.start_line - 1, f.end_line):
                 lines[i] = ";" + lines[i]
 
         with open(file, "w") as f:
             f.writelines(lines)
 
+    # Remove any remaing global definitions
+    # assigned to removed functions
+    # This catches any global labels that import unused
+    # functions from other files
+    for file in fileg:
+        with open(file, "r") as f:
+            lines = f.readlines()
+
+        for g in fileg[file]:
+            lines[g.line - 1] = ";" + lines[g.line - 1]
+
+        with open(file, "w") as f:
+            f.writelines(lines)
+
     print(
         "Detected and removed {} unused functions from a total of {} functions".format(
-            len(remove), len(functions)
+            len(removef), len(functions)
         )
     )
 
