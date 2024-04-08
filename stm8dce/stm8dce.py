@@ -143,6 +143,7 @@ class Function:
         self.path = path
         self.name = name
         self.calls = []
+        self.mem_loads = []
         self.start_line = start_line
         self.end_line = None
         self.global_defs = []
@@ -160,9 +161,31 @@ class Function:
         print("Function:", self.name)
         print("File:", self.path)
         print("Calls:", self.calls)
+        print("Loads:", self.loads)
         print("Start line:", self.start_line)
         print("End line:", self.end_line)
         print("IRQ Handler:", self.isr)
+
+
+# Class to store constant definitions
+class Constant:
+    def __init__(self, path, name, start_line):
+        self.path = path
+        self.name = name
+        self.start_line = start_line
+        self.end_line = None
+
+    def __str__(self):
+        return self.name
+
+    def __repr__(self):
+        return self.name
+
+    def print(self):
+        print("Constant:", self.name)
+        print("File:", self.path)
+        print("Start line:", self.start_line)
+        print("End line:", self.end_line)
 
 
 ############################################
@@ -198,6 +221,7 @@ def is_comment(line):
     return line.strip().startswith(";")
 
 
+# Returns if the line is a function label
 # Precondition: line is in code section
 # Critera for a function label:
 #   - Is not a comment
@@ -215,6 +239,14 @@ def is_function_label(line):
         return sline[:-1]
 
 
+# Returns if the line is a constant label
+# Precondition: line is in constants section
+# Critera for a constant label:
+#   - Same as function label
+def is_constant_label(line):
+    return is_function_label(line)
+
+
 # Preconditions: line is after a function label
 # Returns the call target if the line is a call
 # instruction, None otherwise
@@ -225,8 +257,6 @@ def is_function_label(line):
 #   - Followed by a label which:
 #       - Starts with _ or a letter
 #       - Only contains letters, numbers, and '_'
-
-
 def is_call(line):
     sline = remove_comments(line.strip())
 
@@ -287,6 +317,36 @@ def is_int_def(line):
     return None
 
 
+# Returns if the line is a load with a label
+# as src
+# Criteria for a load:
+#   - Start with 'ld' or 'ldw' or 'ldf'
+#   - Dst (Left) and src (Right) are separated by ','
+#   - Src must contain a label appended with a + and a number (e.g., _label+1)
+def is_load_src_label(line):
+    sline = remove_comments(line.strip())
+    if not (
+        sline.startswith("ld") or sline.startswith("ldw") or sline.startswith("ldf")
+    ):
+        return None
+
+    if "," not in sline:
+        return None
+
+    src = sline.split(",")[1].strip()
+    if "+" not in src:
+        return None
+
+    label = src.split("+")[0].strip()
+    # Label might currently include parantheses etc.
+    # Remove them until we get to the actual label
+    for i in range(len(label)):
+        if label[i].isalnum() or label[i] == "_":
+            return label[i:]
+
+    return None
+
+
 ############################################
 # Parsing
 ############################################
@@ -342,10 +402,46 @@ def parse_function(fileit, label):
             ret.calls.append(call)
             continue
 
+        # Keep track of loads with labels as src (these are likely constants)
+        load = is_load_src_label(line)
+        if load and (load not in ret.mem_loads):
+            if DEBUG:
+                print("Line {}: Load with label as src {}".format(fileit.index, load))
+            ret.mem_loads.append(load)
+            continue
+
     if DEBUG:
         if ret.empty:
             print("Line {}: Function {} is empty!".format(fileit.index, label))
         print("Line {}: Function {} ends here".format(fileit.index, label))
+
+    return ret
+
+
+def parse_constant(fileit, label):
+    if DEBUG:
+        print("Line {}: Constant {} starts here".format(fileit.index, label))
+
+    ret = Constant(fileit.path, label, fileit.index)
+    while True:
+        try:
+            line = next(fileit)
+        except StopIteration:
+            break
+
+        # Ignore comments
+        if is_comment(line):
+            continue
+
+        # Check if this is the end of the constant
+        if is_constant_label(line) or is_area(line):
+            # Set back as this line is not part of the constant
+            fileit.prev()
+            ret.end_line = fileit.index
+            break
+
+    if DEBUG:
+        print("Line {}: Constant {} ends here".format(fileit.index, label))
 
     return ret
 
@@ -380,10 +476,36 @@ def parse_code_section(fileit):
     return functions
 
 
+def parse_const_section(fileit):
+    if DEBUG:
+        print("Line {}: Constants section starts here".format(fileit.index))
+
+    constants = []
+    while True:
+        try:
+            line = next(fileit)
+        except StopIteration:
+            break
+
+        area = is_area(line)
+        if area:
+            break
+
+        clabel = is_function_label(line)
+        if clabel:
+            constants += [parse_constant(fileit, clabel)]
+
+    if DEBUG:
+        print("Line {}: Constants section ends here".format(fileit.index))
+
+    return constants
+
+
 # Parses the file iterator and returns a list of:
 #   - Function objects
 #   - GlobalDef objects
 #   - IntDef objects
+#   - Constant objects
 # Parsing includes:
 #   - Detecting global definitions
 #   - Detecting and parsing code sections
@@ -391,7 +513,7 @@ def parse(fileit):
     globals = []
     interrupts = []
     functions = []
-
+    constants = []
     while True:
         try:
             line = next(fileit)
@@ -418,17 +540,23 @@ def parse(fileit):
 
             continue
 
+        # Code section
         area = is_area(line)
         if area == "CODE":
             functions += parse_code_section(fileit)
 
-    return globals, interrupts, functions
+        # Constants section
+        if area == "CONST":
+            constants = parse_const_section(fileit)
+
+    return globals, interrupts, constants, functions
 
 
 # Parses a file and returns a list of:
 #   - Function objects
 #   - GlobalDef objects
 #   - IntDef objects
+#   - Constant objects
 # This function opens the file and creates a FileIterator
 # The actual parsing is done by the parse() function
 def parse_file(file):
@@ -537,11 +665,13 @@ def main():
     globals = []
     interrupts = []
     functions = []
+    constants = []
     for file in os.listdir(args.output):
         if file.endswith(".asm"):
-            g, i, f = parse_file(args.output + "/" + file)
+            g, i, c, f = parse_file(args.output + "/" + file)
             globals += g
             interrupts += i
+            constants += c
             functions += f
 
     # Assign GlobalDef objects to their respective functions
@@ -595,13 +725,6 @@ def main():
     # Remove duplicates
     keep = list(set(keep))
 
-    if VERBOSE:
-        print()
-        print("Keeping functions:")
-        for f in keep:
-            print("\t", f)
-        print()
-
     # Remove functions that are not in keep
     removef = [f for f in functions if f not in keep]
 
@@ -616,16 +739,33 @@ def main():
         if f.isr_def:
             removei.append(f.isr_def)
 
+    # Remove constants that are not used
+    removec = constants.copy()
+    for c in constants:
+        for f in keep:
+            if c.name in f.mem_loads:
+                removec.remove(c)
+                break
+
+    # Remove global labels assigned to removed constants
+    removeg += [g for g in globals if g.name in [c.name for c in removec]]
+
     if VERBOSE:
+        print()
         print("Removing functions:")
         for f in removef:
             print("\t", f)
         print()
+        print("Removing Constants:")
+        for c in removec:
+            print("\t", c)
+        print()
 
-    # Group functions, globals and int defs by file to reduce file I/O
+    # Group functions, globals, int defs and constants by file to reduce file I/O
     filef = {}
     fileg = {}
     filei = {}
+    filec = {}
     for f in removef:
         if f.path not in filef:
             filef[f.path] = []
@@ -638,9 +778,14 @@ def main():
         if i.path not in filei:
             filei[i.path] = []
         filei[i.path].append(i)
+    for c in removec:
+        if c.path not in filec:
+            filec[c.path] = []
+        filec[c.path].append(c)
 
     # Remove (comment out) unused functions,
-    # global definitions and interrupt definitions
+    # global definitions, interrupt definitions
+    # and constants from the files
     for file in filef:
         with open(file, "r") as f:
             lines = f.readlines()
@@ -664,6 +809,12 @@ def main():
         if file in filef:
             for f in filef[file]:
                 for i in range(f.start_line - 1, f.end_line):
+                    lines[i] = ";" + lines[i]
+
+        # Constants
+        if file in filec:
+            for c in filec[file]:
+                for i in range(c.start_line - 1, c.end_line):
                     lines[i] = ";" + lines[i]
 
         with open(file, "w") as f:
@@ -695,9 +846,27 @@ def main():
         with open(file, "w") as f:
             f.writelines(lines)
 
+    # Remove any remaining constants
+    for file in filec:
+        with open(file, "r") as f:
+            lines = f.readlines()
+
+        for c in filec[file]:
+            for i in range(c.start_line - 1, c.end_line):
+                lines[i] = ";" + lines[i]
+
+        with open(file, "w") as f:
+            f.writelines(lines)
+
+    print("Detected and removed:")
     print(
-        "Detected and removed {} unused functions from a total of {} functions".format(
+        "{} unused functions from a total of {} functions".format(
             len(removef), len(functions)
+        )
+    )
+    print(
+        "{} unused constants from a total of {} constants".format(
+            len(removec), len(constants)
         )
     )
 
