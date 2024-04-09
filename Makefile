@@ -112,7 +112,7 @@ AS_FLAGS = -plosg -ff
 
 # Dead Code Elimination
 DCE_DIR = $(BUILD_DIR)/dce
-DCE_FLAGS =
+DCE_FLAGS = --opt-irq
 
 # Object files
 OBJ_DIR = $(BUILD_DIR)/obj
@@ -126,7 +126,7 @@ LD_FLAGS = -mstm8 --out-fmt-elf --opt-code-size
 LIBS = $(addprefix -l, stm8)
 
 # ELF to HEX flags
-OBJCOPY_FLAGS =
+OBJCOPY_FLAGS = --remove-section=".debug*" --remove-section=SSEG --remove-section=INITIALIZED --remove-section=DATA
 
 # Size Check
 RAM_SIZE = 1024
@@ -194,11 +194,13 @@ flash: $(BUILD_DIR)/$(PROJECT).ihx size_check
 upload: flash
 
 # Prints size of firmware and checks if it fits into the flash and ram of the target device
-size_check: $(BUILD_DIR)/$(PROJECT).elf
+# The RAM size is based on the DATA section of the ELF file
+# The flash size is based on the ihx file which strips out any RAM related sections
+size_check: $(BUILD_DIR)/$(PROJECT).ihx $(BUILD_DIR)/$(PROJECT).elf
 	@echo "\nPROGRAM SIZE:"; \
 	TOO_LARGE_RAM=0; \
 	TOO_LARGE_FLASH=0; \
-	USED_RAM=$$($(SIZE) -A $< | grep -o 'DATA.*[0-9]* ' | grep -o '[0-9]*' || echo 0 ); \
+	USED_RAM=$$($(SIZE) -A $(BUILD_DIR)/$(PROJECT).elf | grep -o 'DATA.*[0-9]* ' | grep -o '[0-9]*' || echo 0 ); \
 	USED_RAM=$$(echo $$USED_RAM | tr -d '[:space:]' ); \
 	RAM_SIZE=$$(echo $(RAM_SIZE) | tr -d '[:space:]' ); \
 	echo "------------------------------------------------------"; \
@@ -206,9 +208,8 @@ size_check: $(BUILD_DIR)/$(PROJECT).elf
 	if [ $$USED_RAM -gt $(RAM_SIZE) ]; then \
 		TOO_LARGE_RAM=1; \
 	fi; \
-	TOTAL=$$($(SIZE) -A $< | grep -o 'Total.*[0-9]' | grep -o '[0-9]*' || echo 0 ); \
-	TOTAL=$$(echo $$TOTAL | tr -d '[:space:]' ); \
-	USED_FLASH=$$((TOTAL - USED_RAM)); \
+	USED_FLASH=$$($(SIZE) -A $(BUILD_DIR)/$(PROJECT).ihx | grep -o 'Total.*[0-9]' | grep -o '[0-9]*' || echo 0 ); \
+	USED_FLASH=$$(echo $$USED_FLASH | tr -d '[:space:]' ); \
 	FLASH_SIZE=$$(echo $(FLASH_SIZE) | tr -d '[:space:]' ); \
 	echo "FLASH:\tUsed $$USED_FLASH bytes from $$FLASH_SIZE bytes ($$(((100 * USED_FLASH)/$(FLASH_SIZE)))%)"; \
 	if [ $$USED_FLASH -gt $(FLASH_SIZE) ]; then \
@@ -239,7 +240,7 @@ $(ASM_DIR)/%.asm: %.c
 
 $(DCE_DIR)/%.asm: $(ASM)
 	@$(MKDIR) -p $(DCE_DIR)
-	$(DCE) $(DCE_FLAGS) -o $(DCE_DIR)/ $^
+	$(DCE) $(DCE_FLAGS) -o $(DCE_DIR) $^
 
 $(OBJ_DIR)/%.rel: $(DCE_DIR)/%.asm
 	@$(MKDIR) -p $(OBJ_DIR)
