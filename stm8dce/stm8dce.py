@@ -51,7 +51,7 @@ from enum import Enum
 VERBOSE = False
 DEBUG = False
 OPT_IRQ = False
-VERSION = "0.0.1"
+VERSION = "0.0.2"
 
 ############################################
 # Classes
