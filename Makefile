@@ -79,7 +79,7 @@ INCLUDE += -Ilib/STM8S_StdPeriph_Driver/inc
 
 # Comment/Uncomment according to your STM8S variant
 # Which peripherals apply to your STM8S variant can be found out
-# by looking at the STM8S_StdPeriph_Driver/inc/stm8s.h file or
+# by looking at the STM8S_StdPeriph_Driver/inc/stm8s.h file
 
 STDPER_SRC 	+= stm8s_adc1.c
 # STDPER_SRC 	+= stm8s_adc2.c
@@ -199,7 +199,9 @@ UBUNTU_DEPENDENCIES :=  build-essential \
                         perl \
                         autoconf \
                         automake \
-                        help2man
+                        help2man \
+			python3 \
+			python3-pip
 
 mkfile_path := $(abspath $(lastword $(MAKEFILE_LIST)))
 MKFILE_DIR := $(realpath -s $(dir $(mkfile_path)))
@@ -210,6 +212,7 @@ TOOLCHAIN_BIN_DIR    := $(TOOLCHAIN_DIR)/bin
 GPUITLS_REPO		:= svn://svn.code.sf.net/p/gputils/code/trunk
 STM8_BIN_UTILS_TAR 	:= http://sourceforge.net/projects/stm8-binutils-gdb/files/latest/download?source=files
 SDCC_REPO		:= svn://svn.code.sf.net/p/sdcc/code/trunk/sdcc
+STM8DCE_REPO		:= https://github.com/CTXz/STM8-DCE.git
 
 # Fetches dependencies for the toolchain on Ubuntu
 ubuntu_deps:
@@ -224,7 +227,7 @@ toolchain_check:
 	fi
 
 # Builds the toolchain
-toolchain: toolchain_start toolchain_sdcc toolchain_stm8-binutils-gdb toolchain_stm8flash toolchain_env
+toolchain: toolchain_start toolchain_sdcc toolchain_stm8-binutils-gdb toolchain_stm8flash toolchain_stm8dce toolchain_env
 	@echo
 	@echo "Toolchain successfully installed to $(TOOLCHAIN_DIR)"
 	@echo "All tools (sdcc, stm8flash, etc.) can be found in: $(TOOLCHAIN_BIN_DIR)"
@@ -380,6 +383,29 @@ toolchain_stm8flash:
 	export PATH="$(TOOLCHAIN_BIN_DIR):$$PATH" && \
 	$(MAKE) && \
 	$(MAKE) DESTDIR=$(TOOLCHAIN_DIR) install
+
+toolchain_stm8dce:
+	@mkdir -p $(TOOLCHAIN_DIR)
+	@mkdir -p $(TOOLCHAIN_BUILD_DIR)
+	@mkdir -p $(TOOLCHAIN_BIN_DIR)
+
+	@echo
+	@echo "Downloading STM8-DCE..."
+	@echo
+	@sleep 2
+	@cd $(TOOLCHAIN_BUILD_DIR)/ && \
+	if [ -d STM8-DCE ]; then \
+		echo "STM8-DCE already downloaded"; \
+	else \
+		git clone $(STM8DCE_REPO); \
+	fi
+
+	@echo
+	@echo "Building STM8-DCE..."
+	@echo
+	@sleep 2
+	@cd $(TOOLCHAIN_BUILD_DIR)/STM8-DCE && \
+	pip install . --prefix=$(TOOLCHAIN_DIR)
 
 toolchain_env:
 	@echo 'SCRIPT_DIR="$$( cd "$$( dirname "$${BASH_SOURCE[0]}" )" && pwd )"' > $(TOOLCHAIN_DIR)/env.sh
