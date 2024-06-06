@@ -405,11 +405,14 @@ toolchain_stm8dce:
 	@echo
 	@sleep 2
 	@cd $(TOOLCHAIN_BUILD_DIR)/STM8-DCE && \
-	pip install . --prefix=$(TOOLCHAIN_DIR)
+	python3 -m pip install . --prefix=$(TOOLCHAIN_DIR)
 
 toolchain_env:
+	@mkdir -p $(TOOLCHAIN_DIR)
 	@echo 'SCRIPT_DIR="$$( cd "$$( dirname "$${BASH_SOURCE[0]}" )" && pwd )"' > $(TOOLCHAIN_DIR)/env.sh
-	@echo 'export PATH=$$SCRIPT_DIR/bin:$$PATH' >> $(TOOLCHAIN_DIR)/env.sh
+	@echo 'export PATH=$$SCRIPT_DIR/bin:$$SCRIPT_DIR/local/bin:$$PATH' >> $(TOOLCHAIN_DIR)/env.sh
+	@echo 'STM8DCE_PYTHONPATH=$$(echo $$SCRIPT_DIR/local/lib/python*/*-packages)' >> $(TOOLCHAIN_DIR)/env.sh
+	@echo 'export PYTHONPATH=$$STM8DCE_PYTHONPATH:$$PYTHONPATH' >> $(TOOLCHAIN_DIR)/env.sh
 
 # Removes the toolchain directory
 clean_toolchain:
