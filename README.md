@@ -1,8 +1,8 @@
-# STM8S Project Template
+# STM8 Project Template
 
-This repository contains a template to kickstart your STM8S projects.
+This repository contains a template to kickstart your STM8 projects.
 
-The template provides the STM8S standard peripheral library and a Makefile to build a toolchain, build the project, and flash the device. Once everything is set up, any source files in the `src/` directory will be compiled and linked into firmware by the Makefile.
+The template provides the STM8 standard peripheral library and a Makefile to build a toolchain, build the project, and flash the device. Once everything is set up, any source files in the `src/` directory will be compiled and linked into a firmware binary by the Makefile.
 
 As a nice bonus, the toolchain provided by the template only includes free and open-source tools:
 - [SDCC](http://sdcc.sourceforge.net/) as the compiler
@@ -12,7 +12,7 @@ As a nice bonus, the toolchain provided by the template only includes free and o
 
 ## Table of Contents
 
-- [STM8S Project Template](#stm8s-project-template)
+- [STM8 Project Template](#stm8-project-template)
   - [Table of Contents](#table-of-contents)
   - [Getting Started](#getting-started)
     - [Toolchain](#toolchain)
@@ -210,9 +210,7 @@ Due to dead code elimination, all SPL modules supported by the MCU can be includ
 # STDPER_SRC 	+= stm8s_wwdg.c
 ```
 
-You can get a good overview of the supported modules by looking at
-
- the [`stm8s.h` header](lib/STM8S_StdPeriph_Driver/inc/stm8s.h) from the standard peripheral library.
+You can get a good overview of the supported modules by looking at the [`stm8s.h` header](lib/STM8S_StdPeriph_Driver/inc/stm8s.h) from the standard peripheral library.
 
 For the STM8S103F3, the following modules are supported:
 
