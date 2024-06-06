@@ -6,7 +6,7 @@
         {
             "label": "STM8S Project - build",
             "type": "shell",
-            "command": "make build",
+            "command": "make",
             "options": {
                 "cwd": "${workspaceFolder}"
              },
