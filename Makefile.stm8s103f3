@@ -18,7 +18,7 @@ CP = cp
 #######################################
 
 # MCU Variant
-DEFINE =
+DEFINE = -DSTM8S103 # Change to your STM8S variant
 
 # Defines
 DEFINE +=
@@ -61,14 +61,14 @@ LIBS = $(addprefix -l, stm8)
 OBJCOPY_FLAGS = --remove-section=".debug*" --remove-section=SSEG --remove-section=INITIALIZED --remove-section=DATA
 
 # Size Check
-RAM_SIZE =
-FLASH_SIZE =
+RAM_SIZE = 1024
+FLASH_SIZE = 8192
 
 #######################################
 # Flash Options
 #######################################
 
-FLASH_FLAGS =
+FLASH_FLAGS = -c stlinkv2 -p stm8s103f3
 
 #######################################
 # Standard Peripheral Library
@@ -81,31 +81,31 @@ INCLUDE += -Ilib/STM8S_StdPeriph_Driver/inc
 # Which peripherals apply to your STM8S variant can be found out
 # by looking at the STM8S_StdPeriph_Driver/inc/stm8s.h file
 
-# STDPER_SRC 	+= stm8s_adc1.c
+STDPER_SRC 	+= stm8s_adc1.c
 # STDPER_SRC 	+= stm8s_adc2.c
-# STDPER_SRC 	+= stm8s_awu.c
-# STDPER_SRC 	+= stm8s_beep.c
+STDPER_SRC 	+= stm8s_awu.c
+STDPER_SRC 	+= stm8s_beep.c
 # STDPER_SRC 	+= stm8s_can.c
-# STDPER_SRC 	+= stm8s_clk.c
-# STDPER_SRC 	+= stm8s_exti.c
-# STDPER_SRC 	+= stm8s_flash.c
-# STDPER_SRC 	+= stm8s_gpio.c
-# STDPER_SRC 	+= stm8s_i2c.c
-# STDPER_SRC 	+= stm8s_itc.c
-# STDPER_SRC 	+= stm8s_iwdg.c
-# STDPER_SRC 	+= stm8s_rst.c
-# STDPER_SRC 	+= stm8s_spi.c
-# STDPER_SRC 	+= stm8s_tim1.c
-# STDPER_SRC 	+= stm8s_tim2.c
+STDPER_SRC 	+= stm8s_clk.c
+STDPER_SRC 	+= stm8s_exti.c
+STDPER_SRC 	+= stm8s_flash.c
+STDPER_SRC 	+= stm8s_gpio.c
+STDPER_SRC 	+= stm8s_i2c.c
+STDPER_SRC 	+= stm8s_itc.c
+STDPER_SRC 	+= stm8s_iwdg.c
+STDPER_SRC 	+= stm8s_rst.c
+STDPER_SRC 	+= stm8s_spi.c
+STDPER_SRC 	+= stm8s_tim1.c
+STDPER_SRC 	+= stm8s_tim2.c
 # STDPER_SRC 	+= stm8s_tim3.c
 # STDPER_SRC 	+= stm8s_tim4.c
 # STDPER_SRC 	+= stm8s_tim5.c
 # STDPER_SRC 	+= stm8s_tim6.c
-# STDPER_SRC 	+= stm8s_uart1.c
+STDPER_SRC 	+= stm8s_uart1.c
 # STDPER_SRC 	+= stm8s_uart2.c
 # STDPER_SRC 	+= stm8s_uart3.c
 # STDPER_SRC 	+= stm8s_uart4.c
-# STDPER_SRC 	+= stm8s_wwdg.c
+STDPER_SRC 	+= stm8s_wwdg.c
 
 SRC_FILES += $(STDPER_SRC)
 
@@ -203,15 +203,15 @@ UBUNTU_DEPENDENCIES :=  build-essential \
 						python3 \
 						python3-pip
 
-mkfile_path 		 := $(abspath $(lastword $(MAKEFILE_LIST)))
-MKFILE_DIR 			 := $(realpath -s $(dir $(mkfile_path)))
+mkfile_path := $(abspath $(lastword $(MAKEFILE_LIST)))
+MKFILE_DIR := $(realpath -s $(dir $(mkfile_path)))
 TOOLCHAIN_DIR        := $(MKFILE_DIR)/stm8-toolchain
 TOOLCHAIN_BUILD_DIR  := $(TOOLCHAIN_DIR)/build
 TOOLCHAIN_BIN_DIR    := $(TOOLCHAIN_DIR)/bin
 
 GPUITLS_REPO		:= svn://svn.code.sf.net/p/gputils/code/trunk
 STM8_BIN_UTILS_TAR 	:= http://sourceforge.net/projects/stm8-binutils-gdb/files/latest/download?source=files
-SDCC_REPO			:= svn://svn.code.sf.net/p/sdcc/code/trunk/sdcc
+SDCC_REPO		:= svn://svn.code.sf.net/p/sdcc/code/trunk/sdcc
 STM8DCE_REPO		:= https://github.com/CTXz/STM8-DCE.git
 
 # Fetches dependencies for the toolchain on Ubuntu
