@@ -1,0 +1,5 @@
+stm8-toolchain/
+build/
+.vscode/
+.git/
+*.md
