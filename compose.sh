@@ -20,6 +20,8 @@ Commands:
             --shell   Drop into a shell in the build container instead of running make
   flash           Flash the STM8 via stm8flash inside the container
             --shell   Drop into a shell in the flash container instead of flashing
+  upload          Alias for flash
+  clean           Remove build artifacts (runs 'make clean' in the container)
   image           Force a local build of the toolchain image
   help            Show this message
 
@@ -108,7 +110,7 @@ case "${cmd}" in
       compose_run build make "${forward[@]}"
     fi
     ;;
-  flash)
+  flash|upload)
     parse_options "$@"
     ensure_image
     if [[ "${shell}" == "true" ]]; then
@@ -116,6 +118,11 @@ case "${cmd}" in
     else
       compose_run flash make flash "${forward[@]}"
     fi
+    ;;
+  clean)
+    parse_options "$@"
+    ensure_image
+    compose_run build make clean "${forward[@]}"
     ;;
   image)
     build_image_locally
