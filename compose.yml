@@ -1,0 +1,27 @@
+services:
+  build:
+    image: ${STM8_IMAGE:-ghcr.io/ctxz/stm8-toolchain:latest}
+    build:
+      context: .
+      dockerfile: Dockerfile
+    working_dir: /project
+    user: "${HOST_UID:-1000}:${HOST_GID:-1000}"
+    environment:
+      HOME: /tmp
+    volumes:
+      - "${PROJECT_ROOT:-.}:/project"
+
+  flash:
+    image: ${STM8_IMAGE:-ghcr.io/ctxz/stm8-toolchain:latest}
+    build:
+      context: .
+      dockerfile: Dockerfile
+    working_dir: /project
+    # Flashing talks to the ST-LINK over USB, which needs root + device access.
+    user: root
+    privileged: true
+    environment:
+      HOME: /tmp
+    volumes:
+      - "${PROJECT_ROOT:-.}:/project"
+      - /dev/bus/usb:/dev/bus/usb
