@@ -34,8 +34,9 @@ RUN make toolchain TOOLCHAIN_DIR=/opt/stm8-toolchain
 # Remove the large build artefacts (sources, object files, etc.)
 RUN make clean_toolchain TOOLCHAIN_DIR=/opt/stm8-toolchain
 
-# SDCC trunk ships a unified linker as 'sdld' but still invokes it as 'sdldstm8'
-RUN ln -s /opt/stm8-toolchain/bin/sdld /opt/stm8-toolchain/bin/sdldstm8
+# SDCC trunk ships a unified linker as 'sdld' but still invokes it as 'sdldstm8'.
+# Some SDCC revisions already install 'sdldstm8', so force the link to stay idempotent.
+RUN ln -sf /opt/stm8-toolchain/bin/sdld /opt/stm8-toolchain/bin/sdldstm8
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Stage 2: Lean runtime image
