@@ -25,3 +25,33 @@ services:
     volumes:
       - "${PROJECT_ROOT:-.}:/project"
       - /dev/bus/usb:/dev/bus/usb
+
+  cube:
+    build:
+      context: .
+      dockerfile: docker/cube/Dockerfile
+      args:
+        STM8CUBEMX_ZIP: "${STM8CUBEMX_ZIP:-missing-stm8cubemx.zip}"
+    image: ${CUBE_IMAGE:-stm8-project-template-cube:java8}
+    pull_policy: never
+    working_dir: /workspace
+    environment:
+      HOME: /home/developer
+      HOST_UID: "${HOST_UID:-1000}"
+      HOST_GID: "${HOST_GID:-1000}"
+      DISPLAY: "${DISPLAY:-}"
+      XAUTHORITY: /tmp/.Xauthority
+      XDG_RUNTIME_DIR: "${CUBE_XDG_RUNTIME_DIR:-/tmp/wayland}"
+      WAYLAND_DISPLAY: "${CUBE_WAYLAND_DISPLAY:-}"
+      GDK_BACKEND: "${CUBE_GDK_BACKEND:-x11}"
+      QT_X11_NO_MITSHM: "1"
+      NO_AT_BRIDGE: "1"
+    volumes:
+      - "${PROJECT_ROOT:-.}:/workspace"
+      - cube-home:/home/developer
+      - /tmp/.X11-unix:/tmp/.X11-unix:rw
+      - "${XAUTHORITY_PATH:-/dev/null}:/tmp/.Xauthority:ro"
+      - "${CUBE_WAYLAND_SOCKET:-/dev/null}:/tmp/wayland/${CUBE_WAYLAND_MOUNT_NAME:-wayland-0}:rw"
+
+volumes:
+  cube-home:

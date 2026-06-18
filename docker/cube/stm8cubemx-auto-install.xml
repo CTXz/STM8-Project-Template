@@ -1,0 +1,10 @@
+<AutomatedInstallation langpack="eng">
+  <com.st.microxplorer.install.MXHTMLHelloPanel id="readme"/>
+  <com.st.microxplorer.install.MXLicensePanel id="licence.panel"/>
+  <com.st.microxplorer.install.MXTargetPanel id="target.panel">
+    <installpath>/opt/st/stm8cubemx</installpath>
+  </com.st.microxplorer.install.MXTargetPanel>
+  <com.st.microxplorer.install.MXShortcutPanel id="shortcut.panel"/>
+  <com.st.microxplorer.install.MXInstallPanel id="install.panel"/>
+  <com.st.microxplorer.install.MXFinishPanel id="finish.panel"/>
+</AutomatedInstallation>
