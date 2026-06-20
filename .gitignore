@@ -1,3 +1,4 @@
 stm8-toolchain/
 build/
 *.zip
+.vscode/
