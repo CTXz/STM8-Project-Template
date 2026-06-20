@@ -1,4 +1,4 @@
-# STM8 Project Template
+# STM8 Project Template <!-- omit in toc -->
 
 This repository contains a template to kickstart your STM8 projects.
 
@@ -14,32 +14,30 @@ The toolchain is built from source and always pulls the latest release of each o
 
 Beyond the project template itself, this repository also publishes a Docker image with the full toolchain prebuilt, available at `ghcr.io/ctxz/stm8-toolchain`. Because compiling the toolchain from source can take 30 to 60 minutes, the prebuilt image lets you build and flash STM8 firmware right away without setting anything up on the host.
 
+## Table of Contents <!-- omit in toc -->
+
+- [Choosing a Workflow](#choosing-a-workflow)
+- [Getting Started](#getting-started)
+  - [Docker Workflow](#docker-workflow)
+  - [Toolchain](#toolchain)
+    - [Dependencies](#dependencies)
+    - [Building the Toolchain](#building-the-toolchain)
+    - [Sourcing the Toolchain](#sourcing-the-toolchain)
+    - [Installing the Toolchain](#installing-the-toolchain)
+    - [Using the Prebuilt Docker Toolchain](#using-the-prebuilt-docker-toolchain)
+  - [Preparing the Makefile](#preparing-the-makefile)
+    - [Target MCU Variant](#target-mcu-variant)
+    - [RAM \& Flash Size](#ram--flash-size)
+    - [Flashing Options](#flashing-options)
+    - [Standard Peripheral Library](#standard-peripheral-library)
+  - [Building and Uploading the Project](#building-and-uploading-the-project)
+
 ## Choosing a Workflow
 
 There are two ways to work with this template, and you can switch between them at any time:
 
 1. Docker workflow: the `compose.sh` wrapper runs `make` (and STM8CubeMX) inside a container using the prebuilt toolchain image. You don't install the toolchain on the host, and you don't run `make` directly. This is the quickest way to get going. See [Docker Workflow](#docker-workflow).
 2. Native toolchain: you obtain the toolchain on the host and run `make` yourself. The toolchain can either be built from source on the host or pulled from the prebuilt Docker image. This gives you the standard `make` / `make upload` workflow without a container wrapper. See [Toolchain](#toolchain).
-
-## Table of Contents
-
-- [STM8 Project Template](#stm8-project-template)
-  - [Table of Contents](#table-of-contents)
-  - [Choosing a Workflow](#choosing-a-workflow)
-  - [Getting Started](#getting-started)
-    - [Docker Workflow](#docker-workflow)
-    - [Toolchain](#toolchain)
-      - [Dependencies](#dependencies)
-      - [Building the Toolchain](#building-the-toolchain)
-      - [Sourcing the Toolchain](#sourcing-the-toolchain)
-      - [Installing the Toolchain](#installing-the-toolchain)
-      - [Using the Prebuilt Docker Toolchain](#using-the-prebuilt-docker-toolchain)
-    - [Preparing the Makefile](#preparing-the-makefile)
-      - [Target MCU Variant](#target-mcu-variant)
-      - [RAM \& Flash Size](#ram--flash-size)
-      - [Flashing Options](#flashing-options)
-      - [Standard Peripheral Library](#standard-peripheral-library)
-    - [Building and Uploading the Project](#building-and-uploading-the-project)
 
 ## Getting Started
 
